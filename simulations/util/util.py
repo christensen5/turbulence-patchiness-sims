@@ -43,7 +43,7 @@ def extract_timestamps(filepaths):
                 t.shape[1]
                 t = t[0,0]
             except IndexError:
-                t = t[0]
+                t = np.float32(t)
 
         timestamps.append(t)
 

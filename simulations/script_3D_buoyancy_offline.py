@@ -6,10 +6,10 @@ from datetime import timedelta
 
 
 # Set simulation parameters
-os.chdir("/media/alexander/DATA/Ubuntu/Maarten/sim021_b")
-filenames = "F*n.nc.021"
+os.chdir("/media/alexander/AKC Passport 2TB/Maarten/sim022/")#("/media/alexander/DATA/Ubuntu/Maarten/sim022")
+filenames = "F*n.nc.022"
 savepath = "/home/alexander/Desktop/temp_maarten/hpc_test"#os.path.join(os.getcwd(), "/data/trajectories")
-scale_fact = 5120./3
+scale_fact = 1200 #5120./3
 num_particles = 1000
 runtime = timedelta(seconds=1)
 dt = timedelta(seconds=0.05)
@@ -36,7 +36,7 @@ fieldset.add_constant('halo_north', fieldset.U.grid.lat[-1])
 fieldset.add_periodic_halo(zonal=True, meridional=True, halosize=10)
 
 # Generate initial particle density field
-pfield_grid = RectilinearZGrid(lon=np.arange(0, 256), lat=np.arange(0, 256), depth=np.arange(0, 512), time=np.zeros(1), mesh='flat')
+pfield_grid = RectilinearZGrid(lon=np.arange(0, 720), lat=np.arange(0, 720), depth=np.arange(0, 360), time=np.zeros(1), mesh='flat')
 pfield_data = np.ones((pfield_grid.ydim, pfield_grid.xdim))
 pfield = Field(name='uniform_initial_dist', data=pfield_data, grid=pfield_grid)
 
@@ -45,7 +45,7 @@ pclass = Generic3D
 pset = ParticleSet.from_field(fieldset=fieldset,
                               pclass=pclass,
                               start_field=pfield,
-                              depth=np.random.rand(num_particles) * 350,
+                              depth=np.random.rand(num_particles) * 360,
                               size=num_particles)
 for particle in pset:
     particle.diameter = np.random.uniform(0.018, 0.032)

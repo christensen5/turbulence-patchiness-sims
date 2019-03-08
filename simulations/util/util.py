@@ -1,10 +1,11 @@
 import numpy as np
 import netCDF4
 from glob import glob
+from tqdm import tqdm
 import os
 
 
-__all__ = ['rand_unit_vect_3D', 'extract_timestamps']
+__all__ = ['rand_unit_vect_3D', 'extract_timestamps', 'find_max_velocities']
 
 
 def rand_unit_vect_3D():
@@ -49,3 +50,32 @@ def extract_timestamps(filepaths):
 
 
     return np.array(timestamps)
+
+
+def find_max_velocities(filepaths):
+    """
+    A basic method to open netCDF files containing velocity data and calculate the maximum velocities in the
+    x, y and z direction, for use in computing the Courant number.
+    :param filepaths: String or list of strings representing the path(s) to the file(s).
+    :return: max_velocities: A 3D numpy array containing the maximum velocities in the x, y and z directions over the
+    full set of data files.
+    """
+    paths = sorted(glob(str(filepaths))) if not isinstance(filepaths, list) else filepaths
+
+    if len(paths) == 0:
+        notfound_paths = filepaths
+        raise IOError("FieldSet files not found: %s" % str(notfound_paths))
+
+    max_velocities = np.zeros(3)
+
+    for fp in tqdm(paths):
+        if not os.path.exists(fp):
+            raise IOError("FieldSet file not found: %s" % str(fp))
+
+        nc = netCDF4.Dataset(fp)
+        max_velocities[0] = max(np.max(abs(nc.variables["u"][:,:,:])), max_velocities[0])
+        max_velocities[1] = max(np.max(abs(nc.variables["v"][:,:,:])), max_velocities[1])
+        max_velocities[2] = max(np.max(abs(nc.variables["w"][:,:,:])), max_velocities[2])
+        nc.close()
+
+    return max_velocities

@@ -31,9 +31,3 @@ def reformat_for_animate(filepath):
 
     particlefile.close()
 
-
-
-
-if __name__ == "__main__":
-    file = "/media/alexander/DATA/Ubuntu/Maarten/outputs/30Ti_60Tf_0.05dt/100000p/trajectories_100000p_dead"
-    reformat_for_animate(file, progressbar=True)

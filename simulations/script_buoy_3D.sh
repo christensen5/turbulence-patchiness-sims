@@ -2,33 +2,24 @@
 # Job name
 #PBS -N buoy_3D_test
 # Time required in hh:mm:ss
-#PBS -l walltime=00:10:00
+#PBS -l walltime=71:59:00
 # Resource requirements
-#PBS -l select=1:ncpus=1:mpiprocs=1:ompthreads=1:mem=15999Mb
-# Files to contain standard error and standard output
-#PBS -o stdout
-#PBS -e stderr
-# Mail notification
-#PBS -m ae
-#PBS -M akc17@imperial.ac.uk
+#PBS -l select=1:ncpus=1:mpiprocs=1:ompthreads=1:mem=30999Mb
 
-rm -f stdout* stderr*
-
+module load anaconda3/personal
 module load gcc
 module load mpi
 export I_MPI_CC=gcc
 export I_MPI_CXX=g++
 
-source $HOME/pythondrake/bin/activate
+echo Working Directory is "$(pwd)"
+
 mkdir -p data
 
-# Start time.
-echo Start time is `date` > data/time
+source activate parcelsvenv
 
-python simulations/script_3D_buoyancy_offline.py
+python $HOME/packages/turbulence-patchiness-sims/simulations/script_3D_buoyancy_offline.py
 
-# End time.
-echo end time is `date` >> data/time
+mv data/* $EPHEMERAL/results/
 
-# Copy results to ephemeral
-cp -r data $EPHEMERAL
+source deactivate

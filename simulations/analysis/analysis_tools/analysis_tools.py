@@ -76,11 +76,10 @@ def histogram_cell_velocities(filepaths, n_bins):
     return H, bin_edges
 
 def find_cutoff(H, p):
-...     cutoff = sum(H)*p
-...     i = 0
-...     diff = 0
-...     diff = -1
-...     while diff < 0:
-...         diff = sum(H[:i])-cutoff
-...         i+=1
-...     return i
+    cutoff = sum(H)*p
+    i = 0
+    diff = -1
+    while diff < 0:
+        diff = sum(H[:i])-cutoff
+        i+=1
+    return i

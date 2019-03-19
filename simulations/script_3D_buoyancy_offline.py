@@ -9,12 +9,12 @@ np.random.seed(1234)
 # Set simulation parameters
 os.chdir("/media/alexander/AKC Passport 2TB/Maarten/sim022/")#("/media/alexander/DATA/Ubuntu/Maarten/sim022")
 filenames = "F*n.nc.022"
-savepath = "/home/alexander/Desktop/temp_maarten/50x0.05"#os.path.join(os.getcwd(), "/data/trajectories")
+savepath = "/home/alexander/Desktop/temp_maarten/10x0.01"#os.path.join(os.getcwd(), "/data/trajectories")
 scale_fact = 1200 #5120./3
 num_particles = 10000
 runtime = timedelta(seconds=0.1)
-dt = timedelta(seconds=0.05)
-outputdt = timedelta(seconds=0.05)
+dt = timedelta(seconds=0.01)
+outputdt = timedelta(seconds=0.01)
 
 # Set up parcels objects.
 timestamps = extract_timestamps(filenames)

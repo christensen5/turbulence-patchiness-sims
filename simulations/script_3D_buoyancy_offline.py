@@ -7,18 +7,23 @@ from datetime import timedelta
 np.random.seed(1234)
 
 # Set simulation parameters
-os.chdir("/media/alexander/AKC Passport 2TB/Maarten/sim022/")#("/media/alexander/DATA/Ubuntu/Maarten/sim022")
-filenames = "F*n.nc.022"
+os.chdir("/media/alexander/DATA/Ubuntu/Maarten/sim021_b") #("/media/alexander/AKC Passport 2TB/Maarten/sim022/")
+filenames = "F*n.nc.021"
 savepath = "/home/alexander/Desktop/temp_maarten/10x0.01"#os.path.join(os.getcwd(), "/data/trajectories")
 scale_fact = 1200 #5120./3
-num_particles = 10000
+num_particles = 100
 runtime = timedelta(seconds=0.1)
 dt = timedelta(seconds=0.01)
 outputdt = timedelta(seconds=0.01)
+motile = True
 
 # Set up parcels objects.
 timestamps = extract_timestamps(filenames)
 variables = {'U': 'u', 'V': 'v', 'W': 'w', 'Temp': 't01'}
+if motile:
+    variables["Vort_X"] = 'vort_x'
+    variables["Vort_Y"] = 'vort_y'
+    variables["Vort_Z"] = 'vort_z'
 dimensions = {'lon': 'Nx', 'lat': 'Ny', 'depth': 'Nz'}
 mesh = 'flat'
 fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps)
@@ -38,23 +43,29 @@ fieldset.add_periodic_halo(zonal=True, meridional=True, halosize=10)
 
 # Generate initial particle density field
 pfield_grid = RectilinearZGrid(lon=np.arange(0, 720), lat=np.arange(0, 720), depth=np.arange(0, 360), time=np.zeros(1), mesh='flat')
-uniform_data = np.ones((pfield_grid.ydim, pfield_grid.xdim))
-conc_data = np.zeros((pfield_grid.ydim, pfield_grid.xdim))
-conc_data[150:210,150:210] = np.ones((60, 60))
-conc_data[330:390,330:390] = np.ones((60, 60))
-conc_data[510:570,510:570] = np.ones((60, 60))
-pfield_uniform = Field(name='uniform_initial_dist', data=uniform_data, grid=pfield_grid)
-pfield_conc = Field(name='concentrated_initial_dist', data=conc_data, grid=pfield_grid)
+
+pfield_uniform = uniform_init_field(pfield_grid)
+pfield_conc = conc_init_field(pfield_grid)
 
 # Initiate particleset & kernels
-pclass = Generic3D
+pclass = Akashiwo3D
 pset = ParticleSet.from_field(fieldset=fieldset,
                               pclass=pclass,
                               start_field=pfield_uniform,
                               depth=np.random.rand(num_particles) * 180,
                               size=num_particles)
-for particle in pset:
+
+# Initialise custom particle variables.
+if motile:
+    swim_init = swim_speed_dist(particleset.size, dist='$HOME/packages/turbulence-patchiness-sims/simulations/util/swim_speed_distribution.csv')
+for particle in particleset:
     particle.diameter = np.random.uniform(0.018, 0.032)
+    if motile:
+        dir = rand_unit_vect_3D()
+        particle.dir_x = dir[0]
+        particle.dir_y = dir[1]
+        particle.dir_z = dir[2]
+        particle.v_swim = swim_init[particle.id]
 
 kernels = pset.Kernel(AdvectionRK4_3D_withTemp) + pset.Kernel(periodicBC)
 

@@ -2,12 +2,15 @@ import numpy as np
 import netCDF4
 from glob import glob
 from tqdm import tqdm
+import scipy.interpolate
 import os
+import csv
 import time
 from parcels import Field
 
 
-__all__ = ['rand_unit_vect_3D', 'extract_timestamps', 'find_max_velocities', 'extract_vorticities', 'uniform_init_field', 'conc_init_field']
+__all__ = ['rand_unit_vect_3D', 'extract_timestamps', 'find_max_velocities', 'extract_vorticities',
+           'uniform_init_field', 'conc_init_field', 'swim_speed_dist']
 
 
 def rand_unit_vect_3D():
@@ -110,9 +113,9 @@ def extract_vorticities(filepaths):
         nc_new.createVariable('w', nc.variables["w"].dtype, ('Nz', 'Ny', 'Nx'))
         nc_new.createVariable('t01', nc.variables["t01"].dtype, ('Nz', 'Ny', 'Nx'))
         nc_new.createVariable('time', nc.variables["time"].dtype, ())
-        nc_new.createVariable('vort_u', np.float32, ('Nz', 'Ny', 'Nx'))
-        nc_new.createVariable('vort_v', np.float32, ('Nz', 'Ny', 'Nx'))
-        nc_new.createVariable('vort_w', np.float32, ('Nz', 'Ny', 'Nx'))
+        nc_new.createVariable('vort_x', np.float32, ('Nz', 'Ny', 'Nx'))
+        nc_new.createVariable('vort_y', np.float32, ('Nz', 'Ny', 'Nx'))
+        nc_new.createVariable('vort_z', np.float32, ('Nz', 'Ny', 'Nx'))
 
         nc_new.set_auto_mask(False)
 
@@ -126,18 +129,18 @@ def extract_vorticities(filepaths):
         dv_dz, dv_dy, dv_dx = np.gradient(v)
         dw_dz, dw_dy, dw_dx = np.gradient(w)
 
-        vort_u = dw_dy - dv_dz
-        vort_v = du_dz - dw_dx
-        vort_w = dv_dx - du_dy
+        vort_x = dw_dy - dv_dz
+        vort_y = du_dz - dw_dx
+        vort_z = dv_dx - du_dy
 
         nc_new.variables['u'][:] = u
         nc_new.variables['v'][:] = v
         nc_new.variables['w'][:] = w
         nc_new.variables['time'][:] = time
         nc_new.variables['t01'][:] = t01,
-        nc_new.variables['vort_u'][:] = vort_u
-        nc_new.variables['vort_v'][:] = vort_v
-        nc_new.variables['vort_w'][:] = vort_w
+        nc_new.variables['vort_x'][:] = vort_x
+        nc_new.variables['vort_y'][:] = vort_y
+        nc_new.variables['vort_z'][:] = vort_z
 
         nc_new.sync()
 
@@ -173,3 +176,29 @@ def conc_init_field(grid):
 
 
     return pfield
+
+
+def swim_speed_dist(num_particles, dist='simulations/util/swim_speed_distribution.csv'):
+    """Produce a random swim speed for each particle based on the swim speed distribution for H. Akashiwo given in
+    [Durham2013]"""
+    # Import histogram (contains particle speed dist in um/s)
+    with open(dist, newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_NONNUMERIC)
+        bins = []
+        counts = []
+        for row in reader:
+            bins.append(row[0])
+            counts.append(row[1])
+
+    # Generate PDF
+    cum_counts = np.cumsum(counts)
+    bin_width = 3
+    x = cum_counts * bin_width
+    y = bins
+    pdf = scipy.interpolate.interp1d(x, bins)
+    b = np.zeros(num_particles)
+    for i in range(len(b)):
+        u = np.random.uniform(x[0], x[-1])
+        b[i] = pdf(u) / 1000  # convert um -> mm
+
+    return b

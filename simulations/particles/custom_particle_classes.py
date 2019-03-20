@@ -9,7 +9,7 @@ class Generic3D(JITParticle):
     diameter = Variable('diameter', dtype=np.float32, initial=None)
 
 
-class Akashiwo3D(JITParticle):
+class Akashiwo3D(ScipyParticle):
     temp = Variable('temp', dtype=np.float32, initial=0.)
     diameter = Variable('diameter', dtype=np.float32, initial=None)
     v_swim = Variable('v_swim', dtype=np.float32, initial=0.)

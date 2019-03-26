@@ -1,5 +1,6 @@
 import numpy as np
 from parcels.particle import Variable, ScipyParticle, JITParticle
+from parcels.tools.loggers import warning_once
 
 __all__ = ['Generic3D', 'Akashiwo3D']
 
@@ -9,7 +10,7 @@ class Generic3D(JITParticle):
     diameter = Variable('diameter', dtype=np.float32, initial=None)
 
 
-class Akashiwo3D(ScipyParticle):
+class Akashiwo3D(JITParticle):
     temp = Variable('temp', dtype=np.float32, initial=0.)
     diameter = Variable('diameter', dtype=np.float32, initial=None)
     v_swim = Variable('v_swim', dtype=np.float32, initial=0.)

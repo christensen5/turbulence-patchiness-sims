@@ -1,19 +1,30 @@
+import math
+import warnings
+
 __all__ = ['DeleteParticle', 'TopBottomBoundary', 'periodicBC', 'AdvectionRK4_3D_withTemp', 'GyrotaxisEE_3D_withTemp',
            'GyrotaxisRK4_3D_withTemp']
+
+warnings.simplefilter('once', UserWarning)
+
 
 def DeleteParticle(particle, fieldset, time):  # delete particles who run out of bounds.
     print("Particle %d deleted at (%f, %f, %f)" % (particle.id, particle.lon, particle.lat, particle.depth))
     particle.delete()
 
 
-def TopBottomBoundary(particle, fieldset, time):  # delete particles who run out of bounds.
-    if particle.depth < 0:
-        particle.depth = particle.diameter/2 if particle.diameter is not None else 0.1
+def TopBottomBoundary(particle, fieldset, time, margin=1):  # delete particles who run out of bounds.
+    if particle.diameter is None or math.isnan(particle.diameter):
+        warnings.warn("Particle %d diameter not specified. TopBottomBoundary margin reverting to default!" % particle.id)
+        particle.diameter = margin
+
+    if particle.depth < particle.diameter/2.:
+        particle.depth = particle.diameter/2.
     elif particle.depth > fieldset.U.grid.depth[-1]:
         print("Out-of-depth particle %d deleted at (%f, %f, %f)" % (particle.id, particle.lon, particle.lat, particle.depth))
         particle.delete()
     else:
         print("Particle %d escaped xy-periodic halo at (%f, %f, %f) and was deleted." % (particle.id, particle.lon, particle.lat, particle.depth))
+        particle.delete()
 
 
 def periodicBC(particle, fieldset, time):
@@ -125,13 +136,13 @@ def GyrotaxisRK4_3D_withTemp(particle,fieldset, time):
         di = 0.5 * ((vort_y1 * dir_z1) - (vort_z1 * dir_y1))
         dj = 0.5 * ((vort_z1 * dir_x1) - (vort_x1 * dir_z1))
         dk = 0.5 * ((vort_x1 * dir_y1) - (vort_y1 * dir_x1))
-    newdir = [dir_x1 + (di * particle.dt * 0.5), dir_y1 + (dj * particle.dt * 0.5),
+    newdir1 = [dir_x1 + (di * particle.dt * 0.5), dir_y1 + (dj * particle.dt * 0.5),
               dir_z1 + (dk * particle.dt * 0.5)]  # dt * 0.5 because we're at t + dt/2
-    newnorm = (((newdir[0] ** 2) + (newdir[1] ** 2) + (newdir[2] ** 2)) ** 0.5)
+    newnorm1 = (((newdir1[0] ** 2) + (newdir1[1] ** 2) + (newdir1[2] ** 2)) ** 0.5)
 
-    dir_x2 = newdir[0] / newnorm
-    dir_y2 = newdir[1] / newnorm
-    dir_z2 = newdir[2] / newnorm
+    dir_x2 = newdir1[0] / newnorm1
+    dir_y2 = newdir1[1] / newnorm1
+    dir_z2 = newdir1[2] / newnorm1
 
     k2_lon = (u2 + particle.v_swim * dir_x2) * particle.dt
     k2_lat = (v2 + particle.v_swim * dir_y2) * particle.dt
@@ -157,8 +168,8 @@ def GyrotaxisRK4_3D_withTemp(particle,fieldset, time):
     #     dj = 0.5 * ((vort_z1*dir_x1) - (vort_x1*dir_z1))
     #     dk = 0.5 * ((vort_x1*dir_y1) - (vort_y1*dir_x1))
     # newdir & newnorm (and hence dir_xyz) remain the same for k_23 as well. Again must rewrite below if we switch to "midpoint".
-    # newdir = [dir_x1 + (di * particle.dt * 0.5), dir_y1 + (dj * particle.dt * 0.5), dir_z1 + (dk * particle.dt * 0.5)] # dt x 0.5 because we're at t + dt/2
-    # newnorm = (((newdir[0] ** 2) + (newdir[1] ** 2) + (newdir[2] ** 2)) ** 0.5)
+    # newdir2 = [dir_x1 + (di * particle.dt * 0.5), dir_y1 + (dj * particle.dt * 0.5), dir_z1 + (dk * particle.dt * 0.5)] # dt x 0.5 because we're at t + dt/2
+    # newnorm2 = (((newdir2[0] ** 2) + (newdir2[1] ** 2) + (newdir2[2] ** 2)) ** 0.5)
 
     dir_x3 = dir_x2
     dir_y3 = dir_y2
@@ -189,12 +200,12 @@ def GyrotaxisRK4_3D_withTemp(particle,fieldset, time):
     #     dk = 0.5 * ((vort_x1*dir_y1) - (vort_y1*dir_x1))
     # newdir & newnorm (and hence dir_xyz) are different for k4 since time increment is dt not dt/2. Still may need to
     # change if we switch to computing p(t_n+1,x_n+1) using "midpoint" rather than Euler.
-    newdir = [dir_x1 + (di * particle.dt), dir_y1 + (dj * particle.dt), dir_z1 + (dk * particle.dt)]
-    newnorm = (((newdir[0] ** 2) + (newdir[1] ** 2) + (newdir[2] ** 2)) ** 0.5)
+    newdir3 = [dir_x1 + (di * particle.dt), dir_y1 + (dj * particle.dt), dir_z1 + (dk * particle.dt)]
+    newnorm3 = (((newdir3[0] ** 2) + (newdir3[1] ** 2) + (newdir3[2] ** 2)) ** 0.5)
 
-    dir_x4 = newdir[0] / newnorm
-    dir_y4 = newdir[1] / newnorm
-    dir_z4 = newdir[2] / newnorm
+    dir_x4 = newdir3[0] / newnorm3
+    dir_y4 = newdir3[1] / newnorm3
+    dir_z4 = newdir3[2] / newnorm3
 
     k4_lon = (u4 + particle.v_swim * dir_x4) * particle.dt
     k4_lat = (v4 + particle.v_swim * dir_y4) * particle.dt

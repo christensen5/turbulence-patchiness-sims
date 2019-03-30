@@ -7,23 +7,23 @@ from datetime import timedelta
 np.random.seed(1234)
 
 # Set simulation parameters
-os.chdir("/media/alexander/DATA/Ubuntu/Maarten/sim021_b") #("/media/alexander/AKC Passport 2TB/Maarten/sim022/")
-filenames = "F*n.nc.021"
-savepath = "/home/alexander/Desktop/temp_maarten/10x0.01"#os.path.join(os.getcwd(), "/data/trajectories")
+os.chdir("/media/alexander/AKC Passport 2TB/Maarten/sim022/")
+filenames = "F*n.nc_vort.022"
+savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/30Ti_60Tf_0.01dt/initblob/mot/mot"#os.path.join(os.getcwd(), "/data/trajectories")
 scale_fact = 1200 #5120./3
-num_particles = 100
-runtime = timedelta(seconds=0.1)
+num_particles = 10000
+runtime = timedelta(seconds=30)
 dt = timedelta(seconds=0.01)
-outputdt = timedelta(seconds=0.01)
+outputdt = timedelta(seconds=0.1)
 motile = True
 
 # Set up parcels objects.
 timestamps = extract_timestamps(filenames)
 variables = {'U': 'u', 'V': 'v', 'W': 'w', 'Temp': 't01'}
 if motile:
-    variables["Vort_X"] = 'vort_x'
-    variables["Vort_Y"] = 'vort_y'
-    variables["Vort_Z"] = 'vort_z'
+    variables["vort_X"] = 'vort_x'
+    variables["vort_Y"] = 'vort_y'
+    variables["vort_Z"] = 'vort_z'
 dimensions = {'lon': 'Nx', 'lat': 'Ny', 'depth': 'Nz'}
 mesh = 'flat'
 fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps)
@@ -48,18 +48,18 @@ pfield_uniform = uniform_init_field(pfield_grid)
 pfield_conc = conc_init_field(pfield_grid)
 
 # Initiate particleset & kernels
-pclass = Akashiwo3D
+pclass = Akashiwo3D if motile else Generic3D
 pset = ParticleSet.from_field(fieldset=fieldset,
                               pclass=pclass,
-                              start_field=pfield_uniform,
+                              start_field=pfield_conc,
                               depth=np.random.rand(num_particles) * 180,
                               size=num_particles)
 
 # Initialise custom particle variables.
 if motile:
-    swim_init = swim_speed_dist(particleset.size, dist='$HOME/packages/turbulence-patchiness-sims/simulations/util/swim_speed_distribution.csv')
-for particle in particleset:
-    particle.diameter = np.random.uniform(0.018, 0.032)
+    swim_init = swim_speed_dist(pset.size, dist='/home/alexander/Documents/turbulence-patchiness-sims/simulations/util/swim_speed_distribution.csv')
+for particle in pset:
+    particle.diameter = scale_fact * np.random.uniform(0.018, 0.032)
     if motile:
         dir = rand_unit_vect_3D()
         particle.dir_x = dir[0]
@@ -67,7 +67,10 @@ for particle in particleset:
         particle.dir_z = dir[2]
         particle.v_swim = swim_init[particle.id]
 
-kernels = pset.Kernel(AdvectionRK4_3D_withTemp) + pset.Kernel(periodicBC)
+if motile:
+    kernels = pset.Kernel(GyrotaxisRK4_3D_withTemp) + pset.Kernel(periodicBC)
+else:
+    kernels = pset.Kenel(AdvectionRK4_3D_withTemp) + pset.Kernel(periodicBC)
 
 # Run simulation
 pset.execute(kernels,

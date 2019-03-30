@@ -1,5 +1,6 @@
 import numpy as np
 from parcels.particle import Variable, ScipyParticle, JITParticle
+from parcels.tools.loggers import warning_once
 
 __all__ = ['Generic3D', 'Akashiwo3D']
 

@@ -199,6 +199,6 @@ def swim_speed_dist(num_particles, dist='simulations/util/swim_speed_distributio
     b = np.zeros(num_particles)
     for i in range(len(b)):
         u = np.random.uniform(x[0], x[-1])
-        b[i] = pdf(u) / 1000  # convert um -> mm
+        b[i] = pdf(u) / 1000000  # convert um -> m
 
     return b

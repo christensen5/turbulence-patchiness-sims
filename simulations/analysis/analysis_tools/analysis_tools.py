@@ -1,10 +1,13 @@
 import netCDF4
 import numpy as np
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 from glob import glob
 import os
+from scipy import stats
+from mayavi import mlab
 
-all = ['reformat_for_animate', 'histogram_cell_velocities']
+all = ['reformat_for_animate', 'histogram_cell_velocities', 'plot_densities']
 
 
 def reformat_for_animate(filepath):
@@ -73,13 +76,104 @@ def histogram_cell_velocities(filepaths, n_bins):
             count += 1
             pbar.update(1)
 
+    plt.subplot(1, 2, 1)
+    plt.bar(H, bin_edges[1:])
+    plt.title("Histogram")
+    plt.xlabel("Cell Velocity Magnitude")
+    plt.ylabel("Count")
+
+    plt.subplot(1, 2, 2)
+    n = sum(H)
+    x = np.sort(errors)
+    y = np.array(range(n)) / float(n)
+    plt.title("CDF")
+    plt.ylim(0., 1.)
+    plt.xlabel("Distance (# cells) between endpoints")
+    plt.ylabel("Cumulative Count")
+    plt.plot(x, y)
+    cutoff_95 = np.argmax(y >= 0.95)
+    cutoff_99 = np.argmax(y >= 0.99)
+    plt.vlines([x[cutoff_95], x[cutoff_99]], ymin=0., ymax=1., colors=['r'])
+    plt.text(x[cutoff_95], 0.05, "x=%0.2f" % x[cutoff_95])
+    plt.text(x[cutoff_99], 0.05, "x=%0.2f" % x[cutoff_99])
+
+    plt.subplots_adjust(top=.85)
+    plt.suptitle("Per-Timestep Trajectory Endpoint Difference  --  dt = 0.01s" % sim_T.variables["time"][0][-1],
+                 size=16)
+    plt.show()
+
     return H, bin_edges
 
-def find_cutoff(H, p):
-    cutoff = sum(H)*p
-    i = 0
-    diff = -1
-    while diff < 0:
-        diff = sum(H[:i])-cutoff
-        i+=1
-    return i
+
+
+
+def plot_densities(filepath, timestamps, scale, savepath=None):
+    """
+    This method uses the mayavi library to produce 3D density plots of a particle simulation.
+    :param filepath: string representing the path to netCDF file containing particle position data (EXCLUDING THE .nc)
+    :param timestamps: float, list of floats, or string "firstlast" representing the timestamps for which plots are
+    desired.
+    :param scale: float determining the size of plotted points.
+    :param savepath: string representing where to save the density plots.
+    :return:
+    """
+    def calc_kde(data):
+        return kde(data.T)
+
+    # verify timestamp format
+    if isinstance(timestamps, int) or isinstance(timestamps, float):
+        timestamps = [timestamps]
+
+    # load data
+    lons = np.load(str(filepath + "_lons.npy"))
+    lats = np.load(str(filepath + "_lats.npy"))
+    deps = np.load(str(filepath + "_deps.npy"))
+
+    if timestamps == "firstlast":
+        timestamps = [0, lons.shape[0]-1]
+
+    # compute and plot densities
+    xmin, ymin, zmin = 0, 0, 0
+    xmax, ymax, zmax = lons.max(), lats.max(), deps.max()
+    for t in tqdm(range(len(timestamps))):
+        x = lons[timestamps[t], :]
+        y = lats[timestamps[t], :]
+        z = deps[timestamps[t], :]
+        xyz = np.vstack([x, y, z])
+        kde = stats.gaussian_kde(xyz)
+
+        # # pointwise density
+        # density = kde(xyz)
+        # figure = mlab.figure('DensityPlot', bgcolor=(0., 0., 0.))
+        # pts = mlab.points3d(x, y, z, density, scale_mode='none', scale_factor=scale)
+
+        # whole grid density
+        # xmin, ymin, zmin = 0, 0, 0
+        # xmax, ymax, zmax = x.max(), y.max(), z.max()
+        xi, yi, zi = np.mgrid[xmin:xmax:60j, ymin:ymax:60j, zmin:zmax:30j]
+        coords = np.vstack([item.ravel() for item in [xi, yi, zi]])
+        density = kde(coords).reshape(xi.shape)
+        figure = mlab.figure('DensityPlot', bgcolor=(0., 0., 0.), size=(720, 720))
+        grid = mlab.pipeline.scalar_field(xi, yi, zi, density)
+        min = density.min()
+        max = density.max()
+        mlab.pipeline.volume(grid, vmin=min + .2 * (max - min), vmax=min + .8 * (max - min))
+        mlab.axes()
+        # mlab.view(azimuth=45, elevation=235, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
+        mlab.view(azimuth=-45, elevation=315, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
+        # mlab.show()
+        if savepath is not None:
+            mlab.savefig(savepath + "%03.0f" % t + "x.png")
+        mlab.clf()
+
+
+if __name__ == "__main__":
+    # filepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initblob/dead/trajectories_10000p_30s_0.01dt_0.01sdt_initblob_dead"
+    # savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initblob/dead/density_10000p_30s_0.01dt_0.01sdt_initblob_dead/"
+    # #timestamps = np.linspace(0, 3000, 301, dtype=int).tolist()
+    # timestamps = np.linspace(0, 3000, 31, dtype=int).tolist()
+    # plot_densities(filepath, timestamps, 1, savepath)
+
+    H, bin_edges = histogram_cell_velocities("/media/alexander/AKC Passport 2TB/Maarten/sim022/F*.nc.022", 100)
+    np.save("/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/H.npy", H)
+    np.save("/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/bin_edges.npy", bin_edges)

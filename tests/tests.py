@@ -6,7 +6,6 @@ from simulations import *
 from parcels import *
 import unittest
 import numpy as np
-from tqdm import tqdm
 import math
 
 from mpl_toolkits.mplot3d import Axes3D

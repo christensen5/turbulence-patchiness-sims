@@ -9,6 +9,8 @@ from mayavi import mlab
 
 all = ['reformat_for_animate', 'histogram_cell_velocities', 'plot_densities']
 
+# Load matplotlib style file
+# plt.style.use('/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/plotstyle.mplstyle')
 
 def reformat_for_animate(filepath):
     """
@@ -36,12 +38,16 @@ def reformat_for_animate(filepath):
 
     particlefile.close()
 
-def histogram_cell_velocities(filepaths, n_bins):
+def histogram_cell_velocities(filepaths, n_bins, saveplot=None):
     """
     A method to check the velocities in each cell of the fluid simulation and return a histogram of them, to help
     determining the Courant number.
 
     :param filepaths: String or list of strings representing the path(s) to the file(s).
+
+    :param n_bins: Int representing number of bins to pass to np.histogram()
+
+    :param plot: Boolean indicating whether to produce the histogram plot or just compute the H-array and bin edges.
 
     :return: H : array containing the values of the histogram. See density and weights for a description of the
     possible semantics.
@@ -76,35 +82,33 @@ def histogram_cell_velocities(filepaths, n_bins):
             count += 1
             pbar.update(1)
 
-    plt.subplot(1, 2, 1)
-    plt.bar(H, bin_edges[1:])
-    plt.title("Histogram")
-    plt.xlabel("Cell Velocity Magnitude")
-    plt.ylabel("Count")
+    if saveplot is not None:
+        width = (bin_edges[1] - bin_edges[0])
+        plt.subplot(1, 2, 1)
+        plt.bar(bin_edges[1:], H, width=width)
+        plt.title("Histogram", fontsize=20)
+        plt.xlabel("Velocity Magnitudes (m/s)", fontsize=18)
+        plt.ylabel("Count", fontsize=18)
 
-    plt.subplot(1, 2, 2)
-    n = sum(H)
-    x = np.sort(errors)
-    y = np.array(range(n)) / float(n)
-    plt.title("CDF")
-    plt.ylim(0., 1.)
-    plt.xlabel("Distance (# cells) between endpoints")
-    plt.ylabel("Cumulative Count")
-    plt.plot(x, y)
-    cutoff_95 = np.argmax(y >= 0.95)
-    cutoff_99 = np.argmax(y >= 0.99)
-    plt.vlines([x[cutoff_95], x[cutoff_99]], ymin=0., ymax=1., colors=['r'])
-    plt.text(x[cutoff_95], 0.05, "x=%0.2f" % x[cutoff_95])
-    plt.text(x[cutoff_99], 0.05, "x=%0.2f" % x[cutoff_99])
+        plt.subplot(1, 2, 2)
+        n = sum(H)
+        x = bin_edges
+        y = np.append(np.zeros(1), np.cumsum(H)/n)
+        plt.title("CDF", fontsize=20)
+        plt.xlim(0., x[-1])
+        plt.ylim(0., 1.)
+        plt.xlabel("Velocity Magnitudes (m/s)", fontsize=18)
+        plt.ylabel("Fraction of Data", fontsize=18)
+        plt.plot(x, y)
+        cutoff_95 = np.argmax(y >= 0.95)
+        cutoff_99 = np.argmax(y >= 0.99)
+        plt.vlines([x[cutoff_95], x[cutoff_99]], ymin=0., ymax=1., colors=['r'])
+        plt.text(x[cutoff_95], 0.05, "x=%0.2f" % x[cutoff_95], fontsize=18)
+        plt.text(x[cutoff_99], 0.05, "x=%0.2f" % x[cutoff_99], fontsize=18)
 
-    plt.subplots_adjust(top=.85)
-    plt.suptitle("Per-Timestep Trajectory Endpoint Difference  --  dt = 0.01s" % sim_T.variables["time"][0][-1],
-                 size=16)
-    plt.show()
+        plt.savefig(saveplot)
 
     return H, bin_edges
-
-
 
 
 def plot_densities(filepath, timestamps, scale, savepath=None):
@@ -159,8 +163,8 @@ def plot_densities(filepath, timestamps, scale, savepath=None):
         max = density.max()
         mlab.pipeline.volume(grid, vmin=min + .2 * (max - min), vmax=min + .8 * (max - min))
         mlab.axes()
-        # mlab.view(azimuth=45, elevation=235, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
-        mlab.view(azimuth=-45, elevation=315, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
+        mlab.view(azimuth=45, elevation=235, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
+        # mlab.view(azimuth=-45, elevation=315, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
         # mlab.show()
         if savepath is not None:
             mlab.savefig(savepath + "%03.0f" % t + "x.png")
@@ -168,12 +172,12 @@ def plot_densities(filepath, timestamps, scale, savepath=None):
 
 
 if __name__ == "__main__":
-    # filepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initblob/dead/trajectories_10000p_30s_0.01dt_0.01sdt_initblob_dead"
-    # savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initblob/dead/density_10000p_30s_0.01dt_0.01sdt_initblob_dead/"
-    # #timestamps = np.linspace(0, 3000, 301, dtype=int).tolist()
-    # timestamps = np.linspace(0, 3000, 31, dtype=int).tolist()
-    # plot_densities(filepath, timestamps, 1, savepath)
-
-    H, bin_edges = histogram_cell_velocities("/media/alexander/AKC Passport 2TB/Maarten/sim022/F*.nc.022", 100)
-    np.save("/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/H.npy", H)
-    np.save("/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/bin_edges.npy", bin_edges)
+    filepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initblob/mot/trajectories_10000p_30s_0.01dt_0.05sdt_initblob_mot"
+    savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initblob/mot/density_10000p_30s_0.01dt_0.05sdt_initblob_mot/"
+    #timestamps = np.linspace(0, 3000, 301, dtype=int).tolist()
+    timestamps = np.linspace(0, 600, 31, dtype=int).tolist()
+    plot_densities(filepath, timestamps, 1, savepath)
+    # save_plot_dir = "/home/alexander/Documents/QMEE/LSR/fig/velocity_dist.png"
+    # H, bin_edges = histogram_cell_velocities("/media/alexander/AKC Passport 2TB/Maarten/sim022/F*.nc.022", 100, saveplot=save_plot_dir)
+    # np.save("/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/H.npy", H)
+    # np.save("/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/bin_edges.npy", bin_edges)

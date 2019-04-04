@@ -41,31 +41,29 @@ def compute_trajectory_errors(sim_t, sim_T, savepath=None):
 
     plt.subplot(1, 2, 1)
     plt.hist(errors, bins=100)
-    plt.title("Histogram")
-    plt.xlabel("Distance (# cells) between endpoints")
-    plt.ylabel("Count")
+    plt.title("Histogram", fontsize=20)
+    plt.xlabel("Distance (# cells) between endpoints", fontsize=18)
+    plt.ylabel("Count", fontsize=18)
 
     plt.subplot(1, 2, 2)
     n = sim_T.variables['lon'].shape[0]
     x = np.sort(errors)
     y = np.array(range(n))/float(n)
-    plt.title("CDF")
+    plt.title("CDF", fontsize=20)
     plt.ylim(0., 1.)
-    plt.xlabel("Distance (# cells) between endpoints")
-    plt.ylabel("Cumulative Count")
+    plt.xlabel("Distance (# cells) between endpoints", fontsize=18)
+    plt.ylabel("Fraction of Data", fontsize=18)
     plt.plot(x, y)
     cutoff_95 = np.argmax(y >= 0.95)
     cutoff_99 = np.argmax(y >= 0.99)
     plt.vlines([x[cutoff_95], x[cutoff_99]], ymin=0., ymax=1., colors=['r'])
-    plt.text(x[cutoff_95], 0.05, "x=%0.2f" % x[cutoff_95])
-    plt.text(x[cutoff_99], 0.05, "x=%0.2f" % x[cutoff_99])
+    plt.text(x[cutoff_95], 0.05, "x=%0.2f" % x[cutoff_95], fontsize=18)
+    plt.text(x[cutoff_99], 0.05, "x=%0.2f" % x[cutoff_99], fontsize=18)
 
-    plt.subplots_adjust(top=.85)
-    plt.suptitle("Per-Timestep Trajectory Endpoint Difference  --  dt = 0.01s" % sim_T.variables["time"][0][-1], size=16)
     plt.show()
 
-    sim_dt.close()
-    sim_dT.close()
+    sim_t.close()
+    sim_T.close()
 
 
 if __name__=="__main__":

@@ -84,27 +84,51 @@ def histogram_cell_velocities(filepaths, n_bins, saveplot=None):
 
     if saveplot is not None:
         width = (bin_edges[1] - bin_edges[0])
-        plt.subplot(1, 2, 1)
-        plt.bar(bin_edges[1:], H, width=width)
-        plt.title("Histogram", fontsize=20)
-        plt.xlabel("Velocity Magnitudes (m/s)", fontsize=18)
-        plt.ylabel("Count", fontsize=18)
 
-        plt.subplot(1, 2, 2)
+        fig = plt.figure()
+
+        # plot pdf
+        plt_pdf = fig.add_subplot(1, 2, 1)
+        plt_pdf.bar(bin_edges[1:], H, width=width)
+        xlim = plt_pdf.get_xlim()
+
+        # plot cdf
+        plt_cdf = fig.add_subplot(1, 2, 2)
+        plt_cdf.set_xlim(xlim)
+        plt_cdf.set_ylim(0., 1.)
         n = sum(H)
         x = bin_edges
-        y = np.append(np.zeros(1), np.cumsum(H)/n)
-        plt.title("CDF", fontsize=20)
-        plt.xlim(0., x[-1])
-        plt.ylim(0., 1.)
-        plt.xlabel("Velocity Magnitudes (m/s)", fontsize=18)
-        plt.ylabel("Fraction of Data", fontsize=18)
-        plt.plot(x, y)
+        y = np.append(np.zeros(1), np.cumsum(H) / n)
+        plt_cdf.plot(x, y)
+
+        # compute cutoffs and plot as vertical red lines on both plots
+        cutoff_50 = np.argmax(y >= 0.5)
         cutoff_95 = np.argmax(y >= 0.95)
         cutoff_99 = np.argmax(y >= 0.99)
-        plt.vlines([x[cutoff_95], x[cutoff_99]], ymin=0., ymax=1., colors=['r'])
-        plt.text(x[cutoff_95], 0.05, "x=%0.2f" % x[cutoff_95], fontsize=18)
-        plt.text(x[cutoff_99], 0.05, "x=%0.2f" % x[cutoff_99], fontsize=18)
+        plt_pdf.axvline(x[cutoff_50], ymin=0., ymax=plt_pdf.get_ylim()[1], color='limegreen')
+        plt_pdf.axvline(x[cutoff_95], ymin=0., ymax=plt_pdf.get_ylim()[1], color='r')
+        plt_pdf.axvline(x[cutoff_99], ymin=0., ymax=plt_pdf.get_ylim()[1], color='r')
+        pdf_text_ypos = 0.9 * plt_pdf.get_ylim()[1]
+        plt_pdf.text(x[cutoff_50], pdf_text_ypos, "x=%0.2f" % x[cutoff_50], fontsize=18, color='limegreen')
+        plt_pdf.text(x[cutoff_95], pdf_text_ypos, "x=%0.2f" % x[cutoff_95], fontsize=18, color='r')
+        plt_pdf.text(x[cutoff_99], pdf_text_ypos, "x=%0.2f" % x[cutoff_99], fontsize=18, color='r')
+        plt_cdf.axvline(x[cutoff_50], ymin=0., ymax=plt_cdf.get_ylim()[1], color='limegreen')
+        plt_cdf.axvline(x[cutoff_95], ymin=0., ymax=1., color='r')
+        plt_cdf.axvline(x[cutoff_99], ymin=0., ymax=1., color='r')
+        cdf_text_ypos = 0.9 * plt_cdf.get_ylim()[1]
+        plt_cdf.text(x[cutoff_50], cdf_text_ypos, "x=%0.2f" % x[cutoff_50], fontsize=18, color='limegreen')
+        plt_cdf.text(x[cutoff_95], cdf_text_ypos, "x=%0.2f" % x[cutoff_95], fontsize=18, color='r')
+        plt_cdf.text(x[cutoff_99], cdf_text_ypos, "x=%0.2f" % x[cutoff_99], fontsize=18, color='r')
+
+        # set labels, titles, etc...
+        plt.ylabel("Count", fontsize=18)
+        plt_pdf.set_title("Histogram", fontsize=20)
+        plt_pdf.set_xlabel("Velocity Magnitudes (m/s)", fontsize=18)
+        plt_pdf.set_ylabel("Count", fontsize=18)
+
+        plt_cdf.set_title("CDF", fontsize=20)
+        plt_cdf.set_xlabel("Velocity Magnitudes (m/s)", fontsize=18)
+        plt_cdf.set_ylabel("Fraction of Data", fontsize=18)
 
         plt.savefig(saveplot)
 

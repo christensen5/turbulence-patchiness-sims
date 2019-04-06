@@ -59,7 +59,7 @@ pset = ParticleSet.from_field(fieldset=fieldset,
 if motile:
     swim_init = scale_fact * swim_speed_dist(pset.size, dist='/home/alexander/Documents/turbulence-patchiness-sims/simulations/util/swim_speed_distribution.csv')
 for particle in pset:
-    particle.diameter = scale_fact * np.random.uniform(0.018, 0.032)
+    particle.diameter = scale_fact * np.random.uniform(0.000018, 0.000032)
     if motile:
         dir = rand_unit_vect_3D()
         particle.dir_x = dir[0]

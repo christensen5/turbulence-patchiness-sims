@@ -131,7 +131,6 @@ def histogram_cell_velocities(filepaths, n_bins, saveplot=None):
         plt_cdf.text(x[cutoff_99], cdf_text_ypos, "x=%0.2f" % x[cutoff_99], fontsize=18, color='r')
 
         # set labels, titles, etc...
-        plt.ylabel("Count", fontsize=18)
         plt_pdf.set_title("Histogram", fontsize=20)
         plt_pdf.set_xlabel("Velocity Magnitudes (m/s)", fontsize=18)
         plt_pdf.set_ylabel("Count", fontsize=18)

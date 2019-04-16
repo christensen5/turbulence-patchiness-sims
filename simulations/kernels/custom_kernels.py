@@ -8,7 +8,7 @@ warnings.simplefilter('once', UserWarning)
 
 
 def DeleteParticle(particle, fieldset, time):  # delete particles who run out of bounds.
-    print("Particle %d deleted at (%f, %f, %f)" % (particle.id, particle.lon, particle.lat, particle.depth))
+    print("Particle %d deleted at (%f, %f, %f), t=%f" % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
     particle.delete()
 
 
@@ -19,11 +19,12 @@ def TopBottomBoundary(particle, fieldset, time, margin=1):  # delete particles w
 
     if particle.depth < particle.diameter/2.:
         particle.depth = particle.diameter/2.
+        print("Particle %d breached surface at (%f, %f, %f), t=%f  and was resubmerged." % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
     elif particle.depth > fieldset.U.grid.depth[-1]:
-        print("Out-of-depth particle %d deleted at (%f, %f, %f)" % (particle.id, particle.lon, particle.lat, particle.depth))
+        print("Out-of-depth particle %d deleted at (%f, %f, %f), t=%f." % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
         particle.delete()
     else:
-        print("Particle %d escaped xy-periodic halo at (%f, %f, %f) and was deleted." % (particle.id, particle.lon, particle.lat, particle.depth))
+        print("Particle %d escaped xy-periodic halo at (%f, %f, %f), t=%f and was deleted." % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
         particle.delete()
 
 

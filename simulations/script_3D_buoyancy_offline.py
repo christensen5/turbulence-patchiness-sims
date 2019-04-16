@@ -8,14 +8,14 @@ np.random.seed(1234)
 
 # Set simulation parameters
 os.chdir("/media/alexander/AKC Passport 2TB/Maarten/sim022/")
-filenames = "F*n.nc_vort.022"
-savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/30Ti_60Tf_0.01dt/initblob/mot/mot"#os.path.join(os.getcwd(), "/data/trajectories")
+filenames = "F0000168n.nc.022" #"F*n.nc.022"
+savepath = "/home/alexander/Desktop/temp_maarten/dt_expts/0.1s_total/1x0.1s"#os.path.join(os.getcwd(), "/data/trajectories")
 scale_fact = 1200 #5120./3
 num_particles = 10000
-runtime = timedelta(seconds=30)
-dt = timedelta(seconds=0.01)
+runtime = timedelta(seconds=0.1)
+dt = timedelta(seconds=0.1)
 outputdt = timedelta(seconds=0.1)
-motile = True
+motile = False
 
 # Set up parcels objects.
 timestamps = extract_timestamps(filenames)
@@ -51,15 +51,15 @@ pfield_conc = conc_init_field(pfield_grid)
 pclass = Akashiwo3D if motile else Generic3D
 pset = ParticleSet.from_field(fieldset=fieldset,
                               pclass=pclass,
-                              start_field=pfield_conc,
+                              start_field=pfield_uniform,
                               depth=np.random.rand(num_particles) * 180,
                               size=num_particles)
 
 # Initialise custom particle variables.
 if motile:
-    swim_init = swim_speed_dist(pset.size, dist='/home/alexander/Documents/turbulence-patchiness-sims/simulations/util/swim_speed_distribution.csv')
+    swim_init = scale_fact * swim_speed_dist(pset.size, dist='/home/alexander/Documents/turbulence-patchiness-sims/simulations/util/swim_speed_distribution.csv')
 for particle in pset:
-    particle.diameter = scale_fact * np.random.uniform(0.018, 0.032)
+    particle.diameter = scale_fact * np.random.uniform(0.000018, 0.000032)
     if motile:
         dir = rand_unit_vect_3D()
         particle.dir_x = dir[0]
@@ -70,7 +70,7 @@ for particle in pset:
 if motile:
     kernels = pset.Kernel(GyrotaxisRK4_3D_withTemp) + pset.Kernel(periodicBC)
 else:
-    kernels = pset.Kenel(AdvectionRK4_3D_withTemp) + pset.Kernel(periodicBC)
+    kernels = pset.Kernel(AdvectionRK4_3D_withTemp) + pset.Kernel(periodicBC)
 
 # Run simulation
 pset.execute(kernels,

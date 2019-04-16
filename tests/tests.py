@@ -311,7 +311,7 @@ class OfflineTPSTestCase(unittest.TestCase):
             dir_x = self.particleset[0].dir_x
             dir_y = self.particleset[0].dir_y
             dir_z = self.particleset[0].dir_z
-            
+
             for p in self.particleset:
                 # Check particles have retained constant orientation relative to one another.
                 self.assertAlmostEqual(p.dir_x, dir_x,

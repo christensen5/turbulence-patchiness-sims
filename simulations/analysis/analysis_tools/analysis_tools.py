@@ -4,10 +4,13 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from glob import glob
 import os
+import vg
 from scipy import stats
 from mayavi import mlab
 
-all = ['reformat_for_animate', 'histogram_cell_velocities', 'plot_densities']
+# mlab.options.backend = 'envisage'
+
+all = ['reformat_for_animate', 'histogram_cell_velocities', 'plot_densities', 'plot_polar_angles']
 
 # Load matplotlib style file
 # plt.style.use('/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/plotstyle.mplstyle')
@@ -149,7 +152,12 @@ def plot_densities(filepath, savepath=None):
     :param filepath: string representing the path to netCDF file containing particle position data (EXCLUDING THE .nc)
     :param savepath: string representing where to save the density plots.
     """
+    timestamps = np.linspace(0, 300, 31, dtype=int).tolist()
+    lons = np.load(str(filepath + "_lons.npy"))
+    lats = np.load(str(filepath + "_lats.npy"))
+    deps = np.load(str(filepath + "_deps.npy"))
     density = np.load(str(filepath + "_density.npy"))
+    density = density[:, :, 0:180, :]
     min = density.min()
     max = density.max()
     xmin, ymin, zmin = (0., 0., 0.)
@@ -157,23 +165,113 @@ def plot_densities(filepath, savepath=None):
     xi, yi, zi = density.shape[0:3]
     xi, yi, zi = np.mgrid[xmin:xmax:xi*1j, ymin:ymax:yi*1j, zmin:zmax:zi*1j]
 
+    # for t in tqdm(range(density.shape[3])):
+    #     figure = mlab.figure('DensityPlot', bgcolor=(1., 1., 1.), fgcolor=(0.,0.,0.), size=(720, 720))
+    #     grid = mlab.pipeline.scalar_field(xi, yi, zi, density[:, :, :, t])
+    #     #mlab.pipeline.volume(grid, vmin=min + .2 * (max - min), vmax=min + .8 * (max - min))
+    #     # vol_lowconc = mlab.pipeline.volume(grid, vmin=0., vmax=min + .25 * (max - min), color=(1., 0., 0.))
+    #     vol_highconc = mlab.pipeline.volume(grid, vmin=min + .75 * (max - min), vmax=max, color=(0., 0., 1.))
+    #     mlab.axes()
+    #     mlab.view(azimuth=45, elevation=235, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
+    #      # mlab.view(azimuth=-45, elevation=315, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
+    #      # mlab.show()
+    #     if savepath is not None:
+    #         mlab.savefig(savepath + "%03.0f" % t + "dead.png")
+    #     mlab.clf()
+
     for t in tqdm(range(density.shape[3])):
-        figure = mlab.figure('DensityPlot', bgcolor=(0., 0., 0.), size=(720, 720))
-        grid = mlab.pipeline.scalar_field(xi, yi, zi, density[:, :, :, t])
-        mlab.pipeline.volume(grid, vmin=min + .2 * (max - min), vmax=min + .8 * (max - min))
+        x = lons[timestamps[t], ~np.isnan(lons[timestamps[t], :])]
+        y = lats[timestamps[t], ~np.isnan(lats[timestamps[t], :])]
+        z = deps[timestamps[t], ~np.isnan(deps[timestamps[t], :])]
+
+        xyz = np.vstack([x, y, z])
+        kde = stats.gaussian_kde(xyz)
+        density = kde(xyz)
+        min=density.min()
+        max=density.max()
+        f = 0.5
+        f_cutoff = min + 0.5*(max-min)
+        colors = np.zeros((len(x), 4)).astype(np.uint8)
+        for i in range(x.size):
+            colors[i, 0] = 255 * (density[i] < f_cutoff)
+            colors[i, 2] = 255 * (density[i] > f_cutoff)
+            colors[i, 3] = int(255 * 0.2) * (density[i] > f_cutoff) + int(255 * 0.99) * (density[i] < f_cutoff)
+
+        # Plot scatter with mayavi
+        figure = mlab.figure('DensityPlot', bgcolor=(1., 1., 1.), fgcolor=(0., 0., 0.), size=(720, 720))
+        pts = mlab.points3d(x, y, z, density, colormap='blue-red', scale_mode='none', scale_factor=2)
+        pts.module_manager.scalar_lut_manager.lut.table = colors
         mlab.axes()
-        mlab.view(azimuth=45, elevation=235, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
-         # mlab.view(azimuth=-45, elevation=315, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
-         # mlab.show()
-        if savepath is not None:
-            mlab.savefig(savepath + "%03.0f" % t + "x.png")
+        mlab.draw()
+        mlab.savefig(savepath + "%03.0f" % t + ".png")
         mlab.clf()
 
 
+def plot_polar_angles(filepath, savepath=None):
+    timestamps = np.arange(0, 601, 20)
+    nc = netCDF4.Dataset(filepath + ".nc")
+    dir_x = nc.variables["dir_x"][:][:, timestamps]
+    dir_y = nc.variables["dir_y"][:][:, timestamps]
+    dir_z = nc.variables["dir_z"][:][:, timestamps]
+
+    up = np.array([0., 0., -1])
+
+    theta = np.zeros_like(dir_x)
+    mean = np.zeros(timestamps.size, dtype=int)
+
+    for t in tqdm(range(timestamps.size)):
+        fig = plt.figure(figsize=(12, 9))
+        for p in range(dir_x.shape[0]):
+            orientation = np.array((dir_x[p, t], dir_y[p, t], dir_z[p, t]))
+            theta[p, t] = vg.angle(up, orientation)
+
+        n = theta[:, t].size
+        x = np.sort(theta[:, t].flatten())
+        y = np.array(range(n)) / float(n)
+        mean[t] = x[np.argmax(y >= .5)]
+        # ylims = [400, 1000]
+        # text_x = [0.1, 0.2]
+        # text_y = [200, 500]
+        plt_hist = fig.add_subplot(111)#(1, 2, i + 1)
+        plt_hist.hist(theta[:, t], 100, range=(0., 180.))
+        plt_hist.set_title("Histogram of Particle Polar Angle at time t=%2.f s" % t, fontsize=25)
+        plt_hist.set_xlim(0, 180)
+        plt_hist.set_ylim(0., 5000)
+        plt_hist.set_xlabel("Mean Polar angle (deg)", fontsize=25)
+        plt_hist.set_ylabel("Count", fontsize=25)
+        plt_hist.axvline(mean[t], ymin=0., ymax=plt_hist.get_ylim()[1], color='red')
+        plt_hist.text(137, 120, "mean =%4.1f" % mean[t], fontsize=25, color='red')
+        for tick in plt_hist.xaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+        for tick in plt_hist.yaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+
+        fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/theta_10000p_30s_0.01dt_0.05sdt_initunif_mot/10000p_theta_hist_" + str(int(t)) + "s")
+        plt.close('plt_hist')
+    # np.save(filepath + '_theta.npy', theta)
+
+    fig = plt.figure(figsize=(12, 9))
+    plt_means = fig.add_subplot(111)
+    plt_means.set_title("Mean Particle Polar Angle over time", fontsize=25)
+    plt_means.set_xlabel("Time (s)", fontsize=25)
+    plt_means.set_ylabel("Polar angle (deg)", fontsize=25)
+    plt_means.set_xlim(0, 30)
+    plt_means.plot(np.arange(0, 31, 1), mean, '-bo', linewidth=2, markersize=3)
+    for tick in plt_means.xaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for tick in plt_means.yaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    fig.savefig(
+        "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/theta_10000p_30s_0.01dt_0.05sdt_initunif_mot/10000p_theta_over_time")
+    plt.close('plt_means')
+
+
+
 if __name__ == "__main__":
-    filepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/dead/trajectories_10000p_30s_0.01dt_0.1sdt_initunif_dead"
-    savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/dead/density_10000p_30s_0.01dt_0.1sdt_initunif_dead/"
-    plot_densities(filepath, savepath)
+    filepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/trajectories_10000p_30s_0.01dt_0.05sdt_initunif_mot"
+    # savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/dead/density_10000p_30s_0.01dt_0.05sdt_initunif_dead/"
+    plot_polar_angles(filepath)#, savepath)
+
     # save_plot_dir = "/home/alexander/Documents/QMEE/LSR/fig/velocity_dist.png"
     # H, bin_edges = histogram_cell_velocities("/media/alexander/AKC Passport 2TB/Maarten/sim022/F*.nc.022", 100, saveplot=save_plot_dir)
     # np.save("/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/H.npy", H)

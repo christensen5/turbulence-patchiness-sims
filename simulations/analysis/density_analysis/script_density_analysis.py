@@ -13,42 +13,66 @@ filepath_mot = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot
 
 densities_dead = np.load(filepath_dead)
 densities_mot = np.load(filepath_mot)
-densities_mot = densities_mot[:, :, :, ::2]
 
-timestamps = 12 #density_dead.shape[3]
+timestamps = np.arange(0, 31, 1)#, 30]
 
-f = 0.5
-for t in tqdm(range(timestamps)):
-    density_dead = densities_dead[:, :, :, t]
-    density_mot = densities_mot[:, :, :, t]
-    C = density_mot[np.where(density_mot >= (1 - f) * np.max(density_mot))]
-    Cp = density_dead[np.where(density_dead >= (1 - f) * np.max(density_dead))]
+f = 0.1
+Q = []
+for t in tqdm(timestamps):
+    density_dead = densities_dead[:, :, :, t].flatten()
+    density_mot = densities_mot[:, :, :, t].flatten()
     Cm = np.sum(density_dead)/density_dead.size
-    Q = (C - Cp) / Cm
-    H, bin_edges = np.histogram(Q, 100)
+    Q_t = []
+    fig = plt.figure(figsize=(12, 9))
+    i = -1
+    for f in [0.01, 0.1, 0.5, 0.001]:
+        i += 1
+        C = density_mot[density_mot.argsort()[-int(f * density_mot.size):]]
+        Cp = density_dead[density_dead.argsort()[-int(f * density_dead.size):]]
 
-    width = (bin_edges[1] - bin_edges[0])
+        Q_f = (np.mean(C) - np.mean(Cp)) / Cm
+        Q_t.append(Q_f)
+        if i < 2:
+            xlims = [0.3, 0.5]
+            ylims = [400, 1000]
+            text_x = [0.1, 0.2]
+            text_y = [200, 500]
+            Q_hist, bin_edges = np.histogram((C-Cp)/Cm, 100)
+            plt_hist = fig.add_subplot(1, 2, i+1)
+            width = (bin_edges[1] - bin_edges[0])
+            plt_hist.bar(bin_edges[1:], Q_hist, width=width)
+            plt_hist.set_title("f=%0.2f" %f, fontsize=20)
+            plt_hist.set_xlim(-xlims[i], xlims[i])
+            plt_hist.set_ylim(0., ylims[i])
+            plt_hist.set_xlabel("Q Statistic", fontsize=18)
+            plt_hist.set_ylabel("Count", fontsize=18)
+            plt_hist.axvline(0, ymin=0., ymax=plt_hist.get_ylim()[1], color='red')
+            plt_hist.axvline(Q_f, ymin=0., ymax=plt_hist.get_ylim()[1], color='limegreen')
+            plt_hist.text(text_x[i], text_y[i], "Q=%0.3f" % Q_f, fontsize=18, color='limegreen')
 
-    fig = plt.figure()
+    fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/10000p_Qhist_" + str(t) + "s")
+    plt.close()
+    Q.append(Q_t)
 
-    # plot pdf
-    plt_pdf = fig.add_subplot(1, 2, 1)
-    plt_pdf.bar(bin_edges[1:], H, width=width)
-    x = bin_edges
-    xlim = plt_pdf.get_xlim()
-    # # compute cutoffs and plot as vertical red lines on both plots
-    # cutoff_50 = np.argmax(y >= 0.5)
-    # cutoff_95 = np.argmax(y >= 0.95)
-    # cutoff_99 = np.argmax(y >= 0.99)
-    # plt_pdf.axvline(x[cutoff_50], ymin=0., ymax=plt_pdf.get_ylim()[1], color='limegreen')
-    # plt_pdf.axvline(x[cutoff_95], ymin=0., ymax=plt_pdf.get_ylim()[1], color='r')
-    # plt_pdf.axvline(x[cutoff_99], ymin=0., ymax=plt_pdf.get_ylim()[1], color='r')
-    # pdf_text_ypos = 0.9 * plt_pdf.get_ylim()[1]
-    # plt_pdf.text(x[cutoff_50], pdf_text_ypos, "x=%0.2f" % x[cutoff_50], fontsize=18, color='limegreen')
-    # plt_pdf.text(x[cutoff_95], pdf_text_ypos, "x=%0.2f" % x[cutoff_95], fontsize=18, color='r')
-    # plt_pdf.text(x[cutoff_99], pdf_text_ypos, "x=%0.2f" % x[cutoff_99], fontsize=18, color='r')
-    # set labels, titles, etc...
-    plt_pdf.set_title("Histogram", fontsize=20)
-    plt_pdf.set_xlabel("Q Statistic", fontsize=18)
-    plt_pdf.set_ylabel("Count", fontsize=18)
+Q = np.array(Q)
+
+fig = plt.figure(figsize=(12, 9))
+plt.box(False)
+ax = plt.subplot(111)
+l4 = ax.plot(timestamps, Q[:, 3], '-*', color='orange', linewidth=2, markersize=3, label='f=0.001')
+l1 = ax.plot(timestamps, Q[:, 0], '-bo', linewidth=2, markersize=3, label='f=0.01')
+l2 = ax.plot(timestamps, Q[:, 1], '-gs', linewidth=2, markersize=3, label='f=0.1')
+l3 = ax.plot(timestamps, Q[:, 2], '-cv', linewidth=2, markersize=3, label='f=0.5')
+plt.hlines(0, ax.get_xlim()[0], ax.get_xlim()[1], 'k')
+ax.set_title("Q statistic over time for differing f-values", fontsize=25)
+ax.set_xlabel("Time", fontsize=25)
+ax.set_ylabel("Q", fontsize=25)
+for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+ax.legend(fontsize=25)
+# plt.show()
+fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/10000p_Q_over_time")
+print("Done")
 

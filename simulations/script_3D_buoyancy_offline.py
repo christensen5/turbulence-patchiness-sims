@@ -8,14 +8,15 @@ np.random.seed(1234)
 
 # Set simulation parameters
 os.chdir("/media/alexander/AKC Passport 2TB/Maarten/sim022/")
-filenames = "F0000168n.nc.022" #"F*n.nc.022"
-savepath = "/home/alexander/Desktop/temp_maarten/dt_expts/0.1s_total/1x0.1s"#os.path.join(os.getcwd(), "/data/trajectories")
+filenames = "F0000168n.nc_vort.022" #"F*n.nc.022"
+savepath=None
+# savepath = "/home/alexander/Desktop/temp_maarten/dt_expts/0.1s_total/1x0.1s"#os.path.join(os.getcwd(), "/data/trajectories")
 scale_fact = 1200 #5120./3
 num_particles = 10000
 runtime = timedelta(seconds=0.1)
 dt = timedelta(seconds=0.1)
 outputdt = timedelta(seconds=0.1)
-motile = False
+motile = True
 
 # Set up parcels objects.
 timestamps = extract_timestamps(filenames)
@@ -76,7 +77,7 @@ else:
 pset.execute(kernels,
              runtime=runtime,
              dt=dt,
-             recovery={ErrorCode.ErrorOutOfBounds: TopBottomBoundary},
+             recovery={ErrorCode.ErrorOutOfBounds: DeleteParticle, ErrorCode.ErrorThroughSurface: SubmergeParticle},
              output_file=pset.ParticleFile(name=savepath, outputdt=outputdt)
              )
 

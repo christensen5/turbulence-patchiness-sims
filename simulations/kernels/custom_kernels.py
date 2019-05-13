@@ -1,18 +1,22 @@
 import math
 import warnings
 
-__all__ = ['DeleteParticle', 'TopBottomBoundary', 'periodicBC', 'AdvectionRK4_3D_withTemp', 'GyrotaxisEE_3D_withTemp',
+__all__ = ['DeleteParticle', 'SubmergeParticle', 'periodicBC', 'AdvectionRK4_3D_withTemp', 'GyrotaxisEE_3D_withTemp',
            'GyrotaxisRK4_3D_withTemp']
 
 warnings.simplefilter('once', UserWarning)
 
 
 def DeleteParticle(particle, fieldset, time):  # delete particles who run out of bounds.
-    print("Particle %d deleted at (%f, %f, %f), t=%f" % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
-    particle.delete()
+    if particle.depth > fieldset.U.grid.depth[-1]:
+        print("Out-of-depth particle %d deleted at (%f, %f, %f), t=%f." % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
+        particle.delete()
+    else:
+        print("Particle %d escaped xy-periodic halo at (%f, %f, %f), t=%f and was deleted." % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
+        particle.delete()
 
 
-def TopBottomBoundary(particle, fieldset, time, margin=1):  # delete particles who run out of bounds.
+def SubmergeParticle(particle, fieldset, time, margin=1):  # resubmerge particles who breach the surface.
     if particle.diameter is None or math.isnan(particle.diameter):
         warnings.warn("Particle %d diameter not specified. TopBottomBoundary margin reverting to default!" % particle.id)
         particle.diameter = margin
@@ -20,12 +24,6 @@ def TopBottomBoundary(particle, fieldset, time, margin=1):  # delete particles w
     if particle.depth < particle.diameter/2.:
         particle.depth = particle.diameter/2.
         print("Particle %d breached surface at (%f, %f, %f), t=%f  and was resubmerged." % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
-    elif particle.depth > fieldset.U.grid.depth[-1]:
-        print("Out-of-depth particle %d deleted at (%f, %f, %f), t=%f." % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
-        particle.delete()
-    else:
-        print("Particle %d escaped xy-periodic halo at (%f, %f, %f), t=%f and was deleted." % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
-        particle.delete()
 
 
 def periodicBC(particle, fieldset, time):

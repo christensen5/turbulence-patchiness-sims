@@ -20,7 +20,7 @@ class OfflineTPSTestCase(unittest.TestCase):
         self.grid = RectilinearZGrid(lon=self.lon, lat=self.lat, depth=self.depth, time=np.zeros(1), mesh='flat')
         self.k = (0., 0., -1.)
 
-    def test_kernel_top_bottom_boundary(self):
+    def test_kernel_boundary_cases(self):
         """Test that the custom TopBottomBoundary kernel is correctly dealing with particles at the boundaries of the
         flow. We test by placing 4 particles to test the following cases:
         0) Above surface but no diameter. Should print "zero diameter" warning and place particle 1 cell below surface.
@@ -28,7 +28,7 @@ class OfflineTPSTestCase(unittest.TestCase):
         2) Below floor. Should print "particle deleted" warning and delete particle.
         3) Out-of-bounds. Should print "particle deleted" warning and delete particle.
         """
-        print("Testing TopBottom boundary.")
+        print("Testing kernels for boundary breaches.")
         self.kernel = AdvectionRK4_3D
         self.dt = 1
         self.runtime = 1
@@ -46,7 +46,8 @@ class OfflineTPSTestCase(unittest.TestCase):
         self.particleset[1].diameter = 2
 
         self.particleset.execute(self.kernel, runtime=self.runtime, dt=self.dt,
-                                 recovery={ErrorCode.ErrorOutOfBounds: TopBottomBoundary})
+                                 recovery={ErrorCode.ErrorOutOfBounds: DeleteParticle,
+                                           ErrorCode.ErrorThroughSurface: SubmergeParticle})
 
         # Check particles have been correctly repositioned/deleted.
         p = self.particleset
@@ -808,7 +809,7 @@ class OfflineTPSTestCase(unittest.TestCase):
 def suite():
     suite = unittest.TestSuite()
     # Test utils and subroutines.
-    suite.addTest(OfflineTPSTestCase('test_kernel_top_bottom_boundary'))
+    suite.addTest(OfflineTPSTestCase('test_kernel_boundary_cases'))
     suite.addTest(OfflineTPSTestCase('test_kernel_Gyr_EE_3D_advection'))
     suite.addTest(OfflineTPSTestCase('test_kernel_Gyr_EE_3D_reorientation'))
     suite.addTest((OfflineTPSTestCase('test_kernel_Gyr_EE_3D_tumble_rot')))

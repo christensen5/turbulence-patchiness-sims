@@ -78,7 +78,7 @@ else:
 pset.execute(kernels,
              runtime=runtime,
              dt=dt,
-             recovery={ErrorCode.ErrorOutOfBounds: TopBottomBoundary},
+             recovery={ErrorCode.ErrorOutOfBounds: DeleteParticle, ErrorCode.ErrorThroughSurface: SubmergeParticle},
              output_file=pset.ParticleFile(name=savepath, outputdt=outputdt)
              )
 

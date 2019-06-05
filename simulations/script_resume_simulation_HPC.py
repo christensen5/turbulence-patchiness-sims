@@ -14,12 +14,12 @@ nc_chk = netCDF4.Dataset("/rds/general/user/akc17/ephemeral/checkpoint_100000p_3
 num_particles = nc_chk.variables["lon"].shape[0]
 
 # Set manual simulation parameters
-starttime = timedelta(seconds=25.55)
+starttime = 25.55
 motile = True
 scale_fact = 1200
 filenames = "/rds/general/user/akc17/home/WORK/sim022_vort/F*n.nc_vort.022"
 savepath = os.path.join(os.getcwd(), "trajectories_" + str(num_particles) + "p_30s_0.01dt_0.05sdt_initunif_mot_RESUME")
-endtime = timedelta(seconds=30)
+endtime = 30
 dt = timedelta(seconds=0.01)
 outputdt = timedelta(seconds=0.05)
 

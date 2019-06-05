@@ -1,0 +1,86 @@
+from simulations import *
+from parcels import *
+import os
+import numpy as np
+from datetime import timedelta
+
+np.random.seed(1234)
+
+def run_expt(n):
+    print("\nBeginning %d p run." % n)
+    # Initiate particleset & kernels
+    pclass = Generic3D
+    pset = ParticleSet.from_field(fieldset=fieldset,
+                                  pclass=pclass,
+                                  start_field=pfield_uniform,
+                                  depth=np.random.rand(n) * 180,
+                                  size=n)
+
+    # Initialise custom particle variables.
+    for particle in pset:
+        particle.diameter = scale_fact * np.random.uniform(0.000018, 0.000032)
+
+    kernels = pset.Kernel(AdvectionRK4_3D_withTemp) + pset.Kernel(periodicBC)
+
+    # Run simulation
+    pset.execute(kernels,
+                 runtime=runtime,
+                 dt=dt,
+                 recovery={ErrorCode.ErrorOutOfBounds: TopBottomBoundary},
+                 output_file=pset.ParticleFile(name=str(branch)+str(n), outputdt=outputdt)
+                 )
+
+    print("\nFinished %d p run with %d particles left at endtime." % (n, pset.size))
+
+# Set simulation parameters
+filenames = "/rds/general/user/akc17/home/WORK/sim021_b/F*n.nc.021"
+
+scale_fact = 5120./3
+num_particles = [100, 1000, 2000, 4000, 6000, 8000, 10000]#, 20000, 40000, 60000, 80000, 100000]
+runtime = timedelta(seconds=10)
+dt = timedelta(seconds=0.01)
+outputdt = timedelta(seconds=0.1)
+motile = False
+
+# Set up parcels objects.
+timestamps = extract_timestamps(filenames)
+variables = {'U': 'u', 'V': 'v', 'W': 'w', 'Temp': 't01'}
+dimensions = {'lon': 'Nx', 'lat': 'Ny', 'depth': 'Nz'}
+mesh = 'flat'
+fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps)
+
+# Implement field scaling.
+logger.warning_once("Scaling factor set to %f - ensure this is correct." %scale_fact)
+fieldset.U.set_scaling_factor(scale_fact)
+fieldset.V.set_scaling_factor(scale_fact)
+fieldset.W.set_scaling_factor(scale_fact)
+
+# Make fieldset periodic.
+fieldset.add_constant('halo_west', fieldset.U.grid.lon[0])
+fieldset.add_constant('halo_east', fieldset.U.grid.lon[-1])
+fieldset.add_constant('halo_south', fieldset.U.grid.lat[0])
+fieldset.add_constant('halo_north', fieldset.U.grid.lat[-1])
+fieldset.add_periodic_halo(zonal=True, meridional=True, halosize=10)
+
+# Generate initial particle density field
+pfield_grid = RectilinearZGrid(lon=np.arange(0, 256), lat=np.arange(0, 256), depth=np.arange(0, 512), time=np.zeros(1), mesh='flat')
+
+pfield_uniform = uniform_init_field(pfield_grid)
+
+func_time = {}
+for branch in ['master', 'pr/486']:
+    print('Changing to branch ' + branch)
+    os.system("git --git-dir='/rds/general/user/akc17/home/packages/parcels/.git' --work-tree='/rds/general/user/akc17/home/packages/parcels' checkout "+branch)
+    func_time[branch] = []
+    for run in num_particles:
+        timer = %timeit -r1 -n1 -o run_expt(run)
+        func_time[branch].append(timer)
+
+with open('times.txt', 'w') as f:
+    for x in func_time:
+        print (x, file=f)
+        for y in func_time[x]:
+            print (y,':',func_time[x][y], file=f)
+
+print("\nDone.\n")
+

@@ -5,34 +5,139 @@ import os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
-from timestamp_extractor import extract_timestamps
+from simulations import extract_timestamps
 
-def compute_vorticities(nc):
-    print("REMEMBER TO MAKE IT WRITE THE UPDATED NC FILE AT THE END\n")
-    dx = 0.15
-    dy = 0.15
-    dz = 0.3
-    shape = nc.variables['u'].shape
-    # nc.variables["du_dy"] = np.zeros(shape)
-    # nc.variables["du_dz"] = np.zeros(shape)
-    # nc.variables["dv_dx"] = np.zeros(shape)
-    nc.variables["dv_dz"] = np.zeros((250, shape[2]))#shape[0], shape[2]))
-    # nc.variables["dw_dx"] = np.zeros(shape)
-    nc.variables["dw_dy"] = np.zeros((250, shape[2]))#shape[0], shape[2]))
-    nc.variables["vort_u"] = np.zeros((250, shape[2]))#shape[0], shape[2]))
+def compute_vorticities(filenames):
+    timestamps = extract_timestamps(filenames)
+    variables = {'U': 'u', 'V': 'v', 'W': 'w'}
+    dimensions = {'lon': 'Nx', 'lat': 'Ny', 'depth': 'Nz'}
+    mesh = 'flat'
+    interp_method = {}
+    for v in variables:
+        interp_method[v] = 'cgrid_velocity'
+    fieldset_vel = FieldSet.from_netcdf(filenames=filenames, variables=variables, dimensions=dimensions,
+                                                mesh=mesh, timestamps=timestamps, interp_method=interp_method)
+    # # Make fieldset periodic.
+    # fieldset_vel.add_constant('halo_west', fieldset_vel.U.grid.lon[0])
+    # fieldset_vel.add_constant('halo_east', fieldset_vel.U.grid.lon[-1])
+    # fieldset_vel.add_constant('halo_south', fieldset_vel.U.grid.lat[0])
+    # fieldset_vel.add_constant('halo_north', fieldset_vel.U.grid.lat[-1])
+    # fieldset_vel.add_periodic_halo(zonal=True, meridional=True)
+    fieldset_vel.check_complete()
 
-    for y_ind in tqdm(range(1, shape[1] - 1)):
-        for z_ind in range(1, 250-1):#shape[0]-1)):
-            for x_ind in range(1, shape[2]-1):
-                dv_dz = (nc.variables["v"][z_ind + 1, y_ind, x_ind] - nc.variables["v"][z_ind - 1, y_ind, x_ind]) / (2*dz)
-                #nc.variables["dv_dz"][z_ind, x_ind] = dv_dz
-                dw_dy = (nc.variables["w"][z_ind, y_ind + 1, x_ind] - nc.variables["w"][z_ind, y_ind - 1, x_ind]) / (2*dy)
-                #nc.variables["dw_dy"][z_ind, x_ind] = dw_dy
-                vort_u = dw_dy - dv_dz
-                nc.variables["vort_u"][z_ind, x_ind] = vort_u
+    nc = netCDF4.Dataset(filenames)
 
-        plt.imshow(nc.variables['vort_u'], cmap="coolwarm", origin="lower", vmin=-0.0341726, vmax=0.0407044)
-        plt.savefig("/home/alexander/Desktop/temp_maarten/vort_u" + "%03.0f" % y_ind + ".png")
+    xb = nc.variables['xb'][:]
+    yb = nc.variables['yb'][:]
+    zc = nc.variables['zc'][:]
+
+    dx = xb[1] - xb[0]
+    dy = yb[1] - yb[0]
+    dz = zc[1] - zc[0]
+
+    # Velocities at f-points (according to https://www.nemo-ocean.eu/doc/node19.html), i.e. (x_b, y_b, z_c) gridpoints.
+    shape = (len(zc), len(yb), len(xb))
+    uf = np.zeros(shape)  # z, y, x
+    vf = np.zeros(shape)
+    wf = np.zeros(shape)
+    for i in tqdm(range(1, len(zc)-1)):  # ignore first and last entries since they correspond to out-of-bounds cells.
+        for j in range(1, len(yb)-1):
+            for k in range(1, len(xb)-1):
+                # ub = 0.5 * (fieldset_vel.U.data[0, k, j+1, i+1] + fieldset_vel.U.data[0, k+1, j+1, i+1])
+                # ub_check = fieldset_vel.U.eval(timestamps[0], k+1, j+1, i+1)
+                # vb = 0.5 * (fieldset_vel.V.data[0, k, j+1, i+1] + fieldset_vel.V.data[0, k+1, j+1, i+1])
+                # vb_check = fieldset_vel.V.eval(timestamps[0], k+1, j+1, i+1)
+                # wb = 0.5 * (fieldset_vel.W.data[0, k, j+1, i+1] + fieldset_vel.W.data[0, k+1, j+1, i+1])
+                # wb_check = fieldset_vel.W.eval(timestamps[0], k+1, j+1, i+1)
+                utmp, vtmp, wtmp = fieldset_vel.UVW.eval(timestamps[0], zc[i], yb[j], xb[k])
+                uf[i, j, k] = utmp
+                vf[i, j, k] = vtmp
+                wf[i, j, k] = wtmp
+
+    for array in (uf, vf, wf):
+        array[0, :, :]  = array[1, :, :]
+        array[-1, :, :] = array[-2, :, :]
+
+        array[:, 0, :]  = array[:, 1, :]
+        array[:, -1, :] = array[:, -2, :]
+
+        array[:, :, 0]  = array[:, :, 1]
+        array[:, :, -1] = array[:, :, -2]
+
+    du_dy, du_dz = np.gradient(uf, dx=dx, dy=dy, dz=dz, axis=(1, 0))
+    dv_dx, dv_dz = np.gradient(vf, dx=dx, dy=dy, dz=dz, axis=(2, 0))
+    dw_dx, dw_dy = np.gradient(wf, dx=dx, dy=dy, dz=dz, axis=(2, 1))
+
+    vort_x = dw_dy - dv_dz
+    vort_y = du_dz - dw_dx
+    vort_z = dv_dx - du_dy
+
+
+def compute_vorticities_fast(filenames):
+    timestamps = extract_timestamps(filenames)
+    variables = {'U': 'u', 'V': 'v', 'W': 'w'}
+    dimensions = {'lon': 'Nx', 'lat': 'Ny', 'depth': 'Nz'}
+    mesh = 'flat'
+    interp_method = {}
+    for v in variables:
+        interp_method[v] = 'cgrid_velocity'
+    fieldset_vel = FieldSet.from_netcdf(filenames=filenames, variables=variables, dimensions=dimensions,
+                                                mesh=mesh, timestamps=timestamps, interp_method=interp_method)
+    # # Make fieldset periodic.
+    # fieldset_vel.add_constant('halo_west', fieldset_vel.U.grid.lon[0])
+    # fieldset_vel.add_constant('halo_east', fieldset_vel.U.grid.lon[-1])
+    # fieldset_vel.add_constant('halo_south', fieldset_vel.U.grid.lat[0])
+    # fieldset_vel.add_constant('halo_north', fieldset_vel.U.grid.lat[-1])
+    # fieldset_vel.add_periodic_halo(zonal=True, meridional=True)
+    fieldset_vel.check_complete()
+
+    nc = netCDF4.Dataset(filenames)
+
+    xb = nc.variables['xb'][:]  # in metres
+    yb = nc.variables['yb'][:]
+    zb = nc.variables['zb'][:]
+
+    dx = xb[1] - xb[0]
+    dy = yb[1] - yb[0]
+    dz = zb[1] - zb[0]
+
+    scale_fact = 1200  # 5120./3  # Convert m/s to cells/s
+
+    xsi = 0.
+    eta = 0.
+    zeta = 0.5
+
+    U0 = nc.variables['u'][:][:, :, :-1] * scale_fact
+    # U1 = nc.variables['u'][:][:, :, 1:] * scale_fact
+    V0 = nc.variables['v'][:][:, :-1, :] * scale_fact
+    # V1 = nc.variables['v'][:][:, 1:, :] * scale_fact
+    W0 = nc.variables['w'][:][:-1, :, :] * scale_fact
+    W1 = nc.variables['w'][:][1:, :, :] * scale_fact
+
+    # Velocities at f-points (according to https://www.nemo-ocean.eu/doc/node19.html), i.e. (x_b, y_b, z_c) gridpoints.
+    uf = (1-xsi) * U0# + xsi * U1
+    vf = (1-eta) * V0# + eta * V1
+    wf = (1-zeta) * W0 + zeta * W1
+
+    # Return to original shape (we lose one slice in the interpolation between e.g. U_i and U_i+1)
+    uf = np.concatenate((uf, np.reshape(uf[:, :, -1], (362, 722, 1))), 2)
+    vf = np.concatenate((vf, np.reshape(vf[:, -1, :], (362, 1, 722))), 1)
+    wf = np.concatenate((wf, np.reshape(wf[-1, :, :], (1, 722, 722))), 0)
+
+    # Convert back to m/s from cells/s
+    uf = uf / scale_fact
+    vf = vf / scale_fact
+    wf = wf / scale_fact
+
+    # Compute gradients
+    du_dz, du_dy, du_dx = np.gradient(uf, dz, dy, dx)
+    dv_dz, dv_dy, dv_dx = np.gradient(vf, dz, dy, dx)
+    dw_dz, dw_dy, dw_dx = np.gradient(wf, dz, dy, dx)
+
+    vort_x = dw_dy - dv_dz
+    vort_y = du_dz - dw_dx
+    vort_z = dv_dx - du_dy
+
 
 
 def DeleteParticle(particle, fieldset, time):  # delete particles who run out of bounds.
@@ -64,9 +169,15 @@ np.random.seed(1234)
 
 # nc_example = netCDF4.Dataset("/home/alexander/parcels/parcels/examples/GlobCurrent_example_data/20020101000000-GLOBCURRENT-L4-CUReul_hs-ALT_SUM-v02.0-fv01.0.nc")
 
-os.chdir("/media/alexander/DATA/Ubuntu/Maarten/sim021_b")
-# nc0 = netCDF4.Dataset("F0000291n.nc.021")
-# nc1 = netCDF4.Dataset("F0010239n.nc.021")
+os.chdir("/media/alexander/AKC Passport 2TB/Maarten/sim022")
+
+t0 = time.time()
+compute_vorticities_fast("F0000168n.nc.022")
+t1 = time.time()
+
+print("\n %f s" % (t1-t0))
+
+# nc1 = netCDF4.Dataset("F0000168n.nc.022")
 # nc_movv = netCDF4.Dataset("movv_u.nc.021")
 
 #==============================================
@@ -94,51 +205,51 @@ os.chdir("/media/alexander/DATA/Ubuntu/Maarten/sim021_b")
 #               'time': 'time'}
 # fieldset_ex = FieldSet.from_netcdf(filenames_ex, variables_ex, dimensions_ex)
 
-filestring = "F*n.nc.021"
-filenames = filestring
-#filenames = {'U': filestring, 'V': filestring, 'W': filestring, 'time': filestring, 'Temp': filestring}
-variables = {'U': 'u',
-             'V': 'v',
-             'W': 'w',
-             'Temp': 't01'}
-dimensions = {'lon': 'Nx', 'lat': 'Ny', 'depth': 'Nz'}
-mesh = 'flat'
-timestamps = extract_timestamps(filestring) #np.linspace(0.25, 10, 40)
-fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps)
-fieldset.U.set_scaling_factor(5120./3)
-fieldset.V.set_scaling_factor(5120./3)
-fieldset.W.set_scaling_factor(5120./3)
-fieldset.add_constant('halo_west', fieldset.U.grid.lon[0])
-fieldset.add_constant('halo_east', fieldset.U.grid.lon[-1])
-fieldset.add_constant('halo_south', fieldset.U.grid.lat[0])
-fieldset.add_constant('halo_north', fieldset.U.grid.lat[-1])
-fieldset.add_periodic_halo(zonal=True, meridional=True, halosize=10)
+# filestring = "F*n.nc.021"
+# filenames = filestring
+# #filenames = {'U': filestring, 'V': filestring, 'W': filestring, 'time': filestring, 'Temp': filestring}
+# variables = {'U': 'u',
+#              'V': 'v',
+#              'W': 'w',
+#              'Temp': 't01'}
+# dimensions = {'lon': 'Nx', 'lat': 'Ny', 'depth': 'Nz'}
+# mesh = 'flat'
+# timestamps = extract_timestamps(filestring) #np.linspace(0.25, 10, 40)
+# fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps)
+# fieldset.U.set_scaling_factor(5120./3)
+# fieldset.V.set_scaling_factor(5120./3)
+# fieldset.W.set_scaling_factor(5120./3)
+# fieldset.add_constant('halo_west', fieldset.U.grid.lon[0])
+# fieldset.add_constant('halo_east', fieldset.U.grid.lon[-1])
+# fieldset.add_constant('halo_south', fieldset.U.grid.lat[0])
+# fieldset.add_constant('halo_north', fieldset.U.grid.lat[-1])
+# fieldset.add_periodic_halo(zonal=True, meridional=True, halosize=10)
 
 # fieldset.lons = (fieldset.U.lon[0], fieldset.U.lon[-1])
 # fieldset.lats = (fieldset.U.lat[0], fieldset.U.lat[-1])
 # fieldset.depths = (fieldset.U.depth[0], fieldset.U.depth[-1])
-mygrid = RectilinearZGrid(lon=np.arange(0, 265), lat=np.arange(0, 265), depth=np.arange(0, 512), time=np.zeros(1), mesh='flat')
-mydata = np.ones((mygrid.ydim, mygrid.xdim))
+# mygrid = RectilinearZGrid(lon=np.arange(0, 265), lat=np.arange(0, 265), depth=np.arange(0, 512), time=np.zeros(1), mesh='flat')
+# mydata = np.ones((mygrid.ydim, mygrid.xdim))
 #mydata[15:-15, 15:-15] = 1
-pfield = Field(name='uniform_initial_dist', data=mydata, grid=mygrid)
+# pfield = Field(name='uniform_initial_dist', data=mydata, grid=mygrid)
 #pset = ParticleSet.from_list(fieldset=fieldset, pclass=JITParticle, lon=list(np.linspace(100, 200, 100)), lat=list(np.linspace(100, 200, 100)), depth=np.repeat(155, 100))
-
-num_particles = 1000
-pset = ParticleSet.from_field(fieldset=fieldset,
-                              pclass=ScipyParticle,
-                              start_field=pfield,
-                              depth=np.random.rand(num_particles) * 350,#fieldset.U.depth[-1],
-                              size=num_particles)
-
-pset.execute(AdvectionRK4_3D + pset.Kernel(periodicBC),
-             runtime=timedelta(seconds=3),
-             dt=timedelta(seconds=0.25),
-             recovery={ErrorCode.ErrorOutOfBounds: DeleteParticle},
-             output_file=pset.ParticleFile(name="/home/alexander/Desktop/temp_maarten/particle_test_period",
-                                           outputdt=timedelta(seconds=0.25))
-             )
-
-print("There were %d particles left at endtime.\n" % pset.size)
+#
+# num_particles = 1000
+# pset = ParticleSet.from_field(fieldset=fieldset,
+#                               pclass=ScipyParticle,
+#                               start_field=pfield,
+#                               depth=np.random.rand(num_particles) * 350,#fieldset.U.depth[-1],
+#                               size=num_particles)
+#
+# pset.execute(AdvectionRK4_3D + pset.Kernel(periodicBC),
+#              runtime=timedelta(seconds=3),
+#              dt=timedelta(seconds=0.25),
+#              recovery={ErrorCode.ErrorOutOfBounds: DeleteParticle},
+#              output_file=pset.ParticleFile(name="/home/alexander/Desktop/temp_maarten/particle_test_period",
+#                                            outputdt=timedelta(seconds=0.25))
+#              )
+#
+# print("There were %d particles left at endtime.\n" % pset.size)
 
 # nc0.close()
 # nc1.close()

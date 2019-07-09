@@ -42,10 +42,9 @@ logger.warning_once("Scaling factor set to %f - ensure this is correct." %scale_
 fieldset.U.set_scaling_factor(scale_fact)
 fieldset.V.set_scaling_factor(scale_fact)
 fieldset.W.set_scaling_factor(scale_fact)
-print("SET SCALING FACTOR FOR VORTS")
-fieldset.vort_X.set_scaling_factor(??)
-fieldset.vort_Y.set_scaling_factor(??)
-fieldset.vort_Z.set_scaling_factor(??)
+fieldset.vort_X.set_scaling_factor(scale_fact)
+fieldset.vort_Y.set_scaling_factor(scale_fact)
+fieldset.vort_Z.set_scaling_factor(scale_fact)
 
 # Make fieldset periodic.
 fieldset.add_constant('halo_west', fieldset.U.grid.lon[0])

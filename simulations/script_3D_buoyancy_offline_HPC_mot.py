@@ -28,13 +28,25 @@ if motile:
     variables["vort_Z"] = 'vort_z'
 dimensions = {'lon': 'Nx', 'lat': 'Ny', 'depth': 'Nz'}
 mesh = 'flat'
-fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps)
+interp_method = {}
+for v in variables:
+    if v in ['U', 'V', 'W']:
+        interp_method[v] = 'cgrid_velocity'
+    elif v in ['vort_X', 'vort_Y', 'vort_Z']:
+        interp_method[v] = 'linear'
+    else:
+        interp_method[v] = 'cgrid_tracer'
+
+fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps, interp_method=interp_method)
 
 # Implement field scaling.
 logger.warning_once("Scaling factor set to %f - ensure this is correct." %scale_fact)
 fieldset.U.set_scaling_factor(scale_fact)
 fieldset.V.set_scaling_factor(scale_fact)
 fieldset.W.set_scaling_factor(scale_fact)
+fieldset.vort_X.set_scaling_factor(scale_fact)
+fieldset.vort_Y.set_scaling_factor(scale_fact)
+fieldset.vort_Z.set_scaling_factor(scale_fact)
 
 # Make fieldset periodic.
 fieldset.add_constant('halo_west', fieldset.U.grid.lon[0])

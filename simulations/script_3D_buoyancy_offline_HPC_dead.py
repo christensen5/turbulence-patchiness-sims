@@ -22,13 +22,17 @@ outputdt = timedelta(seconds=0.05)
 # Set up parcels objects.
 timestamps = extract_timestamps(filenames)
 variables = {'U': 'u', 'V': 'v', 'W': 'w', 'Temp': 't01'}
-if motile:
-    variables["vort_X"] = 'vort_x'
-    variables["vort_Y"] = 'vort_y'
-    variables["vort_Z"] = 'vort_z'
 dimensions = {'lon': 'Nx', 'lat': 'Ny', 'depth': 'Nz'}
 mesh = 'flat'
-fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps)
+interp_method = {}
+for v in variables:
+    if v in ['U', 'V', 'W']:
+        interp_method[v] = 'cgrid_velocity'
+    elif v in ['vort_X', 'vort_Y', 'vort_Z']:
+        interp_method[v] = 'linear'
+    else:
+        interp_method[v] = 'cgrid_tracer'
+fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps, interp_method=interp_method)
 
 # Implement field scaling.
 logger.warning_once("Scaling factor set to %f - ensure this is correct." %scale_fact)

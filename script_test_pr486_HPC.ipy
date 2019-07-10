@@ -33,10 +33,10 @@ def run_expt(n):
     print("\nFinished %d p run with %d particles left at endtime." % (n, pset.size))
 
 # Set simulation parameters
-filenames = "/media/alexander/AKC Passport 2TB/Maarten/sim022/F*n.nc_vort.022"
+filenames = "/rds/general/user/akc17/home/WORK/sim022/F*n.nc_vort.022"
 
 scale_fact = 1200
-num_particles = [1000, 2000]#, 4000, 6000, 8000, 10000, 20000, 40000, 60000, 80000, 100000]
+num_particles = [100, 1000, 2000, 4000, 6000, 8000, 10000]#, 20000, 40000, 60000, 80000, 100000]
 runtime = timedelta(seconds=10)
 dt = timedelta(seconds=0.01)
 outputdt = timedelta(seconds=0.1)
@@ -93,11 +93,11 @@ for branch in ['master', 'pr486']:
         timer = %timeit -r3 -n1 -o run_expt(run)
         func_time[branch].append([run] + timer.all_runs + [timer.average])
 
-with open('times.txt', 'w') as f:
-    for x in func_time:
-        print (x, file=f)
-        for y in func_time[x]:
-            print (y, file=f)
+        with open('times.txt', 'w') as f:
+            for x in func_time:
+                print(x, file=f)
+                for y in func_time[x]:
+                    print(y, file=f)
 
 print("\nDone.\n")
 

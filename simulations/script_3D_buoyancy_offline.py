@@ -8,14 +8,14 @@ np.random.seed(1234)
 
 # Set simulation parameters
 os.chdir("/media/alexander/AKC Passport 2TB/Maarten/sim022/")
-filenames = "F0000168n.nc.022" #"F*n.nc.022"
-savepath = "/home/alexander/Desktop/temp_maarten/dt_expts/0.1s_total/1x0.1s"#os.path.join(os.getcwd(), "/data/trajectories")
+filenames = "F*n.nc_vort.022"
+savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/trajectories_10000p_10s_0.01dt_0.05sdt_initunif_mot.nc"
 scale_fact = 1200 #5120./3
 num_particles = 10000
-runtime = timedelta(seconds=0.1)
+runtime = timedelta(seconds=10.0)
 dt = timedelta(seconds=0.1)
 outputdt = timedelta(seconds=0.1)
-motile = False
+motile = True
 
 # Set up parcels objects.
 timestamps = extract_timestamps(filenames)
@@ -42,9 +42,10 @@ logger.warning_once("Scaling factor set to %f - ensure this is correct." %scale_
 fieldset.U.set_scaling_factor(scale_fact)
 fieldset.V.set_scaling_factor(scale_fact)
 fieldset.W.set_scaling_factor(scale_fact)
-fieldset.vort_X.set_scaling_factor(scale_fact)
-fieldset.vort_Y.set_scaling_factor(scale_fact)
-fieldset.vort_Z.set_scaling_factor(scale_fact)
+if motile:
+    fieldset.vort_X.set_scaling_factor(scale_fact)
+    fieldset.vort_Y.set_scaling_factor(scale_fact)
+    fieldset.vort_Z.set_scaling_factor(scale_fact)
 
 # Make fieldset periodic.
 fieldset.add_constant('halo_west', fieldset.U.grid.lon[0])

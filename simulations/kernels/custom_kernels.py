@@ -2,7 +2,7 @@ import math
 import warnings
 
 __all__ = ['DeleteParticle', 'TopBottomBoundary', 'periodicBC', 'AdvectionRK4_3D_withTemp', 'GyrotaxisEE_3D_withTemp',
-           'GyrotaxisRK4_3D_withTemp']
+           'GyrotaxisRK4_3D_withTemp', 'Track_velocities', 'Track_vorticities']
 
 warnings.simplefilter('once', UserWarning)
 
@@ -104,7 +104,7 @@ def GyrotaxisEE_3D_withTemp(particle, fieldset, time):
     particle.temp = fieldset.Temp[time + particle.dt, particle.depth, particle.lat, particle.lon]
 
 
-def GyrotaxisRK4_3D_withTemp(particle,fieldset, time):
+def GyrotaxisRK4_3D_withTemp(particle, fieldset, time):
     """Gyrotactic alignment of particles and consequent advection using fourth-order Runge-Kutta integration,
     including vertical velocity. Function needs to be converted to Kernel object before execution"""
     # Compute k1
@@ -223,3 +223,13 @@ def GyrotaxisRK4_3D_withTemp(particle,fieldset, time):
 
     # Update temp at new position.
     particle.temp = fieldset.Temp[time + particle.dt, particle.depth, particle.lat, particle.lon]
+
+
+def Track_velocities(particle, fieldset, time):
+    particle.u, particle.v, particle.w = fieldset.UVW[time, particle.depth, particle.lat, particle.lon]
+
+
+def Track_vorticities(particle, fieldset, time):
+    particle.vort_x, particle.vort_y, particle.vort_z = fieldset.vort_X[time, particle.depth, particle.lat, particle.lon],\
+                                                        fieldset.vort_Y[time, particle.depth, particle.lat, particle.lon],\
+                                                        fieldset.vort_Z[time, particle.depth, particle.lat, particle.lon]

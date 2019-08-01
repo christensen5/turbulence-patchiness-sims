@@ -9,12 +9,13 @@ np.random.seed(1234)
 # Set simulation parameters
 os.chdir("/media/alexander/AKC Passport 2TB/Maarten/sim022/")
 filenames = "F*n.nc_vort.022"
-savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/trajectories_10000p_10s_0.01dt_0.05sdt_initunif_mot.nc"
+savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/trackvorts_10000p_30s_0.01dt_0.1sdt_1.0B_initunif_mot.nc"
 scale_fact = 1200 #5120./3
 num_particles = 10000
-runtime = timedelta(seconds=10.0)
-dt = timedelta(seconds=0.1)
+runtime = timedelta(seconds=30.0)
+dt = timedelta(seconds=0.01)
 outputdt = timedelta(seconds=0.1)
+B = 1.0
 motile = True
 
 # Set up parcels objects.
@@ -79,9 +80,10 @@ for particle in pset:
         particle.dir_y = dir[1]
         particle.dir_z = dir[2]
         particle.v_swim = swim_init[particle.id]
+        particle.B = B
 
 if motile:
-    kernels = pset.Kernel(GyrotaxisRK4_3D_withTemp) + pset.Kernel(periodicBC)
+    kernels = pset.Kernel(GyrotaxisRK4_3D_withTemp) + pset.Kernel(periodicBC) + pset.Kernel(Track_vorticities)
 else:
     kernels = pset.Kernel(AdvectionRK4_3D_withTemp) + pset.Kernel(periodicBC)
 

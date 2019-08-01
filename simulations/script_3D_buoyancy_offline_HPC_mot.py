@@ -11,12 +11,12 @@ num_particles = 100000
 motile = True
 
 filenames = "/rds/general/user/akc17/home/WORK/sim022_vort/F*n.nc_vort.022"
-savepath = os.path.join(os.getcwd(), "trajectories_" + str(num_particles) + "p_30s_0.01dt_0.05sdt_1.0B_initunif_mot")
+savepath = os.path.join(os.getcwd(), "trajectories_" + str(num_particles) + "p_30s_0.01dt_0.1sdt_1.0B_initunif_mot")
 
 scale_fact = 1200 #5120./3
 runtime = timedelta(seconds=30) #30
 dt = timedelta(seconds=0.01)
-outputdt = timedelta(seconds=0.05)
+outputdt = timedelta(seconds=0.1)
 B = 1.
 
 

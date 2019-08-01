@@ -1,6 +1,7 @@
 from simulations import *
 from parcels import *
 import os
+import sys
 import numpy as np
 from datetime import timedelta
 
@@ -17,7 +18,7 @@ scale_fact = 1200 #5120./3
 runtime = timedelta(seconds=30) #30
 dt = timedelta(seconds=0.01)
 outputdt = timedelta(seconds=0.1)
-B = 1.
+B = [1, 3, 5, 7][sys.argv[1]-1]
 
 
 # Set up parcels objects.

@@ -12,13 +12,13 @@ num_particles = 100000
 motile = True
 
 filenames = "/rds/general/user/akc17/home/WORK/sim022_vort/F*n.nc_vort.022"
-savepath = os.path.join(os.getcwd(), "trajectories_" + str(num_particles) + "p_30s_0.01dt_0.1sdt_1.0B_initunif_mot")
+savepath = os.path.join(os.getcwd(), "trajectories_" + str(num_particles) + "p_30s_0.01dt_0.1sdt_initunif_mot_vswimVAR")
 
 scale_fact = 1200 #5120./3
 runtime = timedelta(seconds=30) #30
 dt = timedelta(seconds=0.01)
 outputdt = timedelta(seconds=0.1)
-B = [1, 3, 5, 7][sys.argv[1]-1]
+B = 2 #[1, 3, 5, 7][int(sys.argv[1])-1]
 
 
 # Set up parcels objects.
@@ -74,7 +74,7 @@ pset = ParticleSet.from_field(fieldset=fieldset,
 
 # Initialise custom particle variables.
 if motile:
-    swim_init = scale_fact * swim_speed_dist(pset.size, dist='/rds/general/user/akc17/home/packages/turbulence-patchiness-sims/simulations/util/swim_speed_distribution.csv')
+    swim_init = [.1, .5, 1.5, 2][int(sys.argv[1])-1] * scale_fact * swim_speed_dist(pset.size, dist='/rds/general/user/akc17/home/packages/turbulence-patchiness-sims/simulations/util/swim_speed_distribution.csv')
 for particle in pset:
     particle.diameter = scale_fact * np.random.uniform(0.000018, 0.000032)
     if motile:

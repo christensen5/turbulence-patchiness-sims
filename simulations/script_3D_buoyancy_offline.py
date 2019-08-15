@@ -9,14 +9,15 @@ np.random.seed(1234)
 # Set simulation parameters
 os.chdir("/media/alexander/AKC Passport 2TB/Maarten/sim022/")
 filenames = "F*n.nc_vort.022"
-savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/trackvorts_10000p_30s_0.01dt_0.1sdt_1.0B_initunif_mot.nc"
+savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/trackvelvorts_1000p_30s_0.1dt_0.1sdt_initunif_mot.nc"
 scale_fact = 1200 #5120./3
-num_particles = 10000
+num_particles = 1000
 runtime = timedelta(seconds=30.0)
-dt = timedelta(seconds=0.01)
+dt = timedelta(seconds=0.1)
 outputdt = timedelta(seconds=0.1)
-B = 1.0
+B = 2.0
 motile = True
+verbose = True
 
 # Set up parcels objects.
 timestamps = extract_timestamps(filenames)
@@ -43,10 +44,7 @@ logger.warning_once("Scaling factor set to %f - ensure this is correct." %scale_
 fieldset.U.set_scaling_factor(scale_fact)
 fieldset.V.set_scaling_factor(scale_fact)
 fieldset.W.set_scaling_factor(scale_fact)
-if motile:
-    fieldset.vort_X.set_scaling_factor(scale_fact)
-    fieldset.vort_Y.set_scaling_factor(scale_fact)
-    fieldset.vort_Z.set_scaling_factor(scale_fact)
+
 
 # Make fieldset periodic.
 fieldset.add_constant('halo_west', fieldset.U.grid.lon[0])
@@ -62,7 +60,12 @@ pfield_uniform = uniform_init_field(pfield_grid)
 pfield_conc = conc_init_field(pfield_grid)
 
 # Initiate particleset & kernels
-pclass = Akashiwo3D if motile else Generic3D
+if verbose:
+    pclass = Akashiwo3D_verbose
+elif motile:
+    pclass = Akashiwo3D
+else:
+    pclass = Generic3D
 pset = ParticleSet.from_field(fieldset=fieldset,
                               pclass=pclass,
                               start_field=pfield_uniform,
@@ -83,9 +86,11 @@ for particle in pset:
         particle.B = B
 
 if motile:
-    kernels = pset.Kernel(GyrotaxisRK4_3D_withTemp) + pset.Kernel(periodicBC) + pset.Kernel(Track_vorticities)
+    kernels = pset.Kernel(GyrotaxisRK4_3D_withTemp) + pset.Kernel(periodicBC)
 else:
     kernels = pset.Kernel(AdvectionRK4_3D_withTemp) + pset.Kernel(periodicBC)
+if verbose:
+    kernels += pset.Kernel(Track_velocities) + pset.Kernel(Track_vorticities)
 
 # Run simulation
 pset.execute(kernels,

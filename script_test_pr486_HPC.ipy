@@ -33,7 +33,7 @@ def run_expt(n):
     print("\nFinished %d p run with %d particles left at endtime." % (n, pset.size))
 
 # Set simulation parameters
-filenames = "/rds/general/user/akc17/home/WORK/sim022/F*n.nc_vort.022"
+filenames = "/rds/general/user/akc17/home/WORK/sim022_vort/F*n.nc_vort.022"
 
 scale_fact = 1200
 num_particles = [100, 1000, 2000, 4000, 6000, 8000, 10000]#, 20000, 40000, 60000, 80000, 100000]

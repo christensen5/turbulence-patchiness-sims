@@ -36,7 +36,7 @@ def run_expt(n):
 filenames = "/media/alexander/AKC Passport 2TB/Maarten/sim022/F*n.nc_vort.022"
 
 scale_fact = 1200
-num_particles = [1000, 2000]#, 4000, 6000, 8000, 10000, 20000, 40000, 60000, 80000, 100000]
+num_particles = [1000, 2000, 4000]#, 6000, 8000, 10000], 20000, 40000, 60000, 80000, 100000]
 runtime = timedelta(seconds=10)
 dt = timedelta(seconds=0.01)
 outputdt = timedelta(seconds=0.1)
@@ -87,13 +87,13 @@ pfield_uniform = uniform_init_field(pfield_grid)
 func_time = {}
 for branch in ['master', 'pr486']:
     print('Changing to branch ' + branch)
-    os.system("git --git-dir='/rds/general/user/akc17/home/packages/parcels/.git' --work-tree='/rds/general/user/akc17/home/packages/parcels' checkout "+branch)
+    os.system("git --git-dir='/home/alexander/parcels/.git' --work-tree='/home/alexander/parcels' checkout "+branch)
     func_time[branch] = []
     for run in num_particles:
         timer = %timeit -r3 -n1 -o run_expt(run)
         func_time[branch].append([run] + timer.all_runs + [timer.average])
 
-with open('times.txt', 'w') as f:
+with open('/home/alexander/Desktop/temp_maarten/pr486/mot/times.txt', 'w') as f:
     for x in func_time:
         print (x, file=f)
         for y in func_time[x]:

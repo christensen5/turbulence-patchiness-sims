@@ -8,15 +8,16 @@ from tqdm import tqdm
 from simulations.analysis.analysis_tools import plot_densities
 import matplotlib.pyplot as plt
 
-filepath_dead = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/dead/trajectories_10000p_30s_0.01dt_0.1sdt_initunif_dead_density.npy"
-filepath_mot = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/trajectories_10000p_30s_0.01dt_0.05sdt_initunif_mot_density.npy"
+
+# filepath_dead = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/dead/trajectories_100000p_30s_0.01dt_0.05sdt_initunif_dead_density.npy"
+filepath_dead = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/dead/100000p_30s_0.01dt_0.05sdt_initunif_dead/density_high.npy"
+filepath_mot = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim/density_high.npy"
 
 densities_dead = np.load(filepath_dead)
 densities_mot = np.load(filepath_mot)
 
 timestamps = np.arange(0, 31, 1)#, 30]
 
-f = 0.1
 Q = []
 for t in tqdm(timestamps):
     density_dead = densities_dead[:, :, :, t].flatten()
@@ -32,25 +33,25 @@ for t in tqdm(timestamps):
 
         Q_f = (np.mean(C) - np.mean(Cp)) / Cm
         Q_t.append(Q_f)
-        if i < 2:
-            xlims = [0.3, 0.5]
-            ylims = [400, 1000]
-            text_x = [0.1, 0.2]
-            text_y = [200, 500]
-            Q_hist, bin_edges = np.histogram((C-Cp)/Cm, 100)
-            plt_hist = fig.add_subplot(1, 2, i+1)
-            width = (bin_edges[1] - bin_edges[0])
-            plt_hist.bar(bin_edges[1:], Q_hist, width=width)
-            plt_hist.set_title("f=%0.2f" %f, fontsize=20)
-            plt_hist.set_xlim(-xlims[i], xlims[i])
-            plt_hist.set_ylim(0., ylims[i])
-            plt_hist.set_xlabel("Q Statistic", fontsize=18)
-            plt_hist.set_ylabel("Count", fontsize=18)
-            plt_hist.axvline(0, ymin=0., ymax=plt_hist.get_ylim()[1], color='red')
-            plt_hist.axvline(Q_f, ymin=0., ymax=plt_hist.get_ylim()[1], color='limegreen')
-            plt_hist.text(text_x[i], text_y[i], "Q=%0.3f" % Q_f, fontsize=18, color='limegreen')
-
-    fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/10000p_Qhist_" + str(t) + "s")
+    #     if i < 2:
+    #         xlims = [0.3, 0.5]
+    #         ylims = [400, 1000]
+    #         text_x = [0.1, 0.2]
+    #         text_y = [200, 500]
+    #         Q_hist, bin_edges = np.histogram((C-Cp)/Cm, 100)
+    #         plt_hist = fig.add_subplot(1, 2, i+1)
+    #         width = (bin_edges[1] - bin_edges[0])
+    #         plt_hist.bar(bin_edges[1:], Q_hist, width=width)
+    #         plt_hist.set_title("f=%0.2f" %f, fontsize=20)
+    #         plt_hist.set_xlim(-xlims[i], xlims[i])
+    #         plt_hist.set_ylim(0., ylims[i])
+    #         plt_hist.set_xlabel("Q Statistic", fontsize=18)
+    #         plt_hist.set_ylabel("Count", fontsize=18)
+    #         plt_hist.axvline(0, ymin=0., ymax=plt_hist.get_ylim()[1], color='red')
+    #         plt_hist.axvline(Q_f, ymin=0., ymax=plt_hist.get_ylim()[1], color='limegreen')
+    #         plt_hist.text(text_x[i], text_y[i], "Q=%0.3f" % Q_f, fontsize=18, color='limegreen')
+    #
+    # fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/comparison/high/10000p_tloop_Qhist_" + str(t) + "s")
     plt.close()
     Q.append(Q_t)
 
@@ -73,6 +74,6 @@ for tick in ax.yaxis.get_major_ticks():
         tick.label.set_fontsize(20)
 ax.legend(fontsize=25)
 # plt.show()
-fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/10000p_Q_over_time")
+fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/comparison/high/10000p_Q_over_time")
 print("Done")
 

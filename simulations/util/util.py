@@ -54,7 +54,7 @@ def extract_timestamps(filepaths):
         timestamps.append(t)
 
 
-    return np.array(timestamps)
+    return np.expand_dims(np.array(timestamps), axis=1)
 
 
 def find_max_velocities(filepaths):

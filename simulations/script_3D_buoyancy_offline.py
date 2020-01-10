@@ -4,20 +4,21 @@ import os
 import numpy as np
 from datetime import timedelta
 
-np.random.seed(1234)
+# np.random.seed(1234)
 
 # Set simulation parameters
 os.chdir("/media/alexander/AKC Passport 2TB/Maarten/sim022/")
 filenames = "F*n.nc_vort.022"
-savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/trackvelvorts_1000p_30s_0.1dt_0.1sdt_initunif_mot.nc"
+savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim.nc.2"
 scale_fact = 1200 #5120./3
-num_particles = 1000
+num_particles = 100000
 runtime = timedelta(seconds=30.0)
-dt = timedelta(seconds=0.1)
+dt = timedelta(seconds=0.01)
 outputdt = timedelta(seconds=0.1)
 B = 2.0
 motile = True
-verbose = True
+verbose = False
+time_periodic = False  # WARNING!!! DOESNT SEEM TO WORK WHEN TRUE
 
 # Set up parcels objects.
 timestamps = extract_timestamps(filenames)
@@ -37,14 +38,13 @@ for v in variables:
     else:
         interp_method[v] = 'cgrid_tracer'
 
-fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps, interp_method=interp_method)
+fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps, time_periodic=time_periodic, interp_method=interp_method)
 
-# Implement field scaling (.
+# Implement field scaling.
 logger.warning_once("Scaling factor set to %f - ensure this is correct." %scale_fact)
 fieldset.U.set_scaling_factor(scale_fact)
 fieldset.V.set_scaling_factor(scale_fact)
 fieldset.W.set_scaling_factor(scale_fact)
-
 
 # Make fieldset periodic.
 fieldset.add_constant('halo_west', fieldset.U.grid.lon[0])

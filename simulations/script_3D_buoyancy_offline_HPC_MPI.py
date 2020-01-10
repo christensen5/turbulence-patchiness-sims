@@ -117,3 +117,5 @@ print("\nFinished with %d particles left at endtime." % pset.size)
 
 print("\nDone.\n")
 
+timer.root.stop()
+timer.root.print_tree()

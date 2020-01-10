@@ -7,13 +7,19 @@ import os
 import vg
 from scipy import stats
 from mayavi import mlab
-
+from math import ceil, floor
 # mlab.options.backend = 'envisage'
 
-all = ['reformat_for_animate', 'histogram_cell_velocities', 'plot_densities', 'plot_polar_angles']
+import sys
+sys.path.append('/home/alexander/Documents/surface_mixing/Analysis/')
+from ana_objects import ParticleData
+
+all = ['reformat_for_animate', 'reformat_for_voronoi', 'histogram_cell_velocities', 'plot_densities', 'plot_voro_concs', 'plot_polar_angles', 'plot_polar_angles_superimposed',
+       'plot_trajectories', 'plot_particlewise_angles', 'plot_particlewise_velocities', 'plot_particlewise_vorticities']
 
 # Load matplotlib style file
 # plt.style.use('/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/plotstyle.mplstyle')
+
 
 def reformat_for_animate(filepath):
     """
@@ -45,11 +51,49 @@ def reformat_for_animate(filepath):
             lats = np.vstack((lats, particlefile.variables["lat"][:][:, f + 1]))
             deps = np.vstack((deps, particlefile.variables["z"][:][:, f + 1]))
 
-    np.save(filepath + '_lons.npy', lons)
-    np.save(filepath + '_lats.npy', lats)
-    np.save(filepath + '_deps.npy', deps)
+    filedir = os.path.dirname(filepath)
+    np.save(os.path.join(filedir, "lons.npy"), lons)  #np.save(filepath + '_lons.npy', lons)
+    np.save(os.path.join(filedir, "lats.npy"), lats)  #np.save(filepath + '_lats.npy', lats)
+    np.save(os.path.join(filedir, "deps.npy"), deps)  #np.save(filepath + '_deps.npy', deps)
 
     particlefile.close()
+
+
+def reformat_for_voronoi(filedir, timesteps):
+    """
+    A method to take the lon, lat, dep .npy files containing particle position data from a simulations and reformat for
+    and reformat to a text file(s) of the format required by Voronoi tesselation library voro++ at each given timestep.
+
+    voro++ requires a .txt file as an input. Each row in this file takes the form:
+
+        <Numerical ID label> <x coordinate> <y coordinate> <z coordinate>
+
+    representing a particle's position at the given time. The output is a .vol text file of the exact same format but
+    with an additional column containing the Voronoi cell volume for each particle:
+
+        <Numerical ID label> <x coordinate> <y coordinate> <z coordinate> <Voronoi cell volume>
+
+    :param filedir: path to the directory containing particle lon.npy, lat.npy, dep.npy files.
+
+    :param timesteps: List of timesteps for which to produce voro++ input files.
+    """
+    if not isinstance(timesteps, list):
+        raise TypeError("timesteps must be provided as a list.")
+
+    dx = 600/720
+    print("dx = %f ENSURE THIS IS CORRECT FOR YOUR SIM AND YOUR CHOICE OF VOLUME UNITS" %dx)
+
+    lons = np.load(os.path.join(filedir, "lons.npy"))
+    lats = np.load(os.path.join(filedir, "lats.npy"))
+    deps = np.load(os.path.join(filedir, "deps.npy"))
+
+    n = lons.shape[1]
+
+    for t in tqdm(timesteps):
+        savepath = os.path.join(filedir, "vor/in/vor_mm_%03d.txt" % t)
+        points = np.stack((np.arange(n), lons[t, :] * dx, lats[t, :] * dx, deps[t, :] * dx), axis=1)
+        np.savetxt(savepath, points, fmt=["%d", "%10.5f", "%10.5f", "%10.5f"])
+
 
 def histogram_cell_velocities(filepaths, n_bins, saveplot=None):
     """
@@ -73,7 +117,7 @@ def histogram_cell_velocities(filepaths, n_bins, saveplot=None):
     paths = sorted(glob(str(filepaths))) if not isinstance(filepaths, list) else filepaths
     if len(paths) == 0:
         notfound_paths = filepaths
-        raise IOError("FieldSet files not found: %s" % str(notfound_paths))
+        raise IOError("FieldSet files notplot_entropies found: %s" % str(notfound_paths))
     with tqdm(total=len(paths)) as pbar:
         for fp in paths:
             if not os.path.exists(fp):
@@ -146,6 +190,7 @@ def histogram_cell_velocities(filepaths, n_bins, saveplot=None):
 
     return H, bin_edges
 
+
 def plot_densities(filepath, savepath=None):
     """
     This method uses the mayavi library to produce 3D density plots of a particle simulation.
@@ -153,10 +198,10 @@ def plot_densities(filepath, savepath=None):
     :param savepath: string representing where to save the density plots.
     """
     timestamps = np.linspace(0, 300, 31, dtype=int).tolist()
-    lons = np.load(str(filepath + "_lons.npy"))
-    lats = np.load(str(filepath + "_lats.npy"))
-    deps = np.load(str(filepath + "_deps.npy"))
-    density = np.load(str(filepath + "_density.npy"))
+    lons = np.load(os.path.join(filepath, "lons.npy"))
+    lats = np.load(os.path.join(filepath, "lats.npy"))
+    deps = np.load(os.path.join(filepath, "deps.npy"))
+    density = np.load(os.path.join(filepath, "density.npy"))
     density = density[:, :, 0:180, :]
     min = density.min()
     max = density.max()
@@ -207,8 +252,225 @@ def plot_densities(filepath, savepath=None):
         mlab.clf()
 
 
-def plot_polar_angles(filepath, savepath=None):
-    timestamps = np.arange(0, 601, 20)
+def plot_voro_concs(filepath, savepath=None):
+    """
+    This method uses the mayavi library to produce 3D density plots of a particle simulation based on the reciprocal of
+    of the volume of the voronoi cells.
+    :param filepath: string representing the path to netCDF file containing particle position data (EXCLUDING THE .nc)
+    :param savepath: string representing where to save the density plots.
+    """
+    timestamps = np.linspace(0, 300, 31, dtype=int).tolist()
+    lons = np.load(os.path.join(filepath, "lons.npy"))[timestamps, :]
+    lats = np.load(os.path.join(filepath, "lats.npy"))[timestamps, :]
+    deps = np.load(os.path.join(filepath, "deps.npy"))[timestamps, :]
+    vols = np.load(os.path.join(filepath, "vols.npy"))
+    concs = np.reciprocal(vols)
+
+    for t in [26]:#tqdm(range(31)):
+        not_nans = ~np.isnan(lons[t, :])
+        x = lons[t, not_nans]
+        y = lats[t, not_nans]
+        z = deps[t, not_nans]
+        c = concs[not_nans, t]
+        x = x[z>1]
+        y = y[z>1]
+        c = c[z>1]
+        z = z[z>1]
+
+        # Plot scatter with mayavi
+        figure = mlab.figure('DensityPlot', bgcolor=(1., 1., 1.), fgcolor=(0., 0., 0.), size=(720, 720))
+        pts = mlab.points3d(x, y, z, np.log10(c), colormap='blue-red', scale_mode='scalar', scale_factor=1., transparent=True)
+        # pts.module_manager.scalar_lut_manager.lut.table = colors
+        # pts.mlab_source.dataset.point_data.scalars = c
+
+        # s = np.ones_like(x)
+        # pts = mlab.quiver3d(x, y, z, s, s, s, scalars=c, mode="sphere", scale_factor=.5)
+        # pts.glyph.color_mode = 'color_by_scalar'
+        # pts.glyph.glyph_source.glyph_source.center = [0, 0, 0]
+
+        mlab.axes()
+        mlab.draw()
+        mlab.savefig(savepath + "%03.0f" % t + ".png")
+        # mlab.clf()
+
+
+
+def plot_entropies(filepath):
+    tload = [0, -1]
+    # time_origin=datetime.datetime(2000,1,5)
+    # Times = [(time_origin + datetime.timedelta(days=t * 5)).strftime("%Y-%m") for t in tload]
+
+    # def reduce_particleset():
+    #     # Load particle data
+    #     pdir = datadir + 'MixingEntropy/'  # Data directory
+    #     fname = 'surfaceparticles_y2000_m1_d5_simdays3650_pos'  # F
+    #
+    #     # load data
+    #     pdata = ParticleData.from_nc(pdir=pdir, fname=fname, Ngrids=40, tload=tload)
+    #     pdata.remove_nans()
+    #
+    #     # Get those particles that start and end in the chosen basin
+    #     r = np.load(outdir_paper + "EntropyMatrix/Entropy_Clusters.npy")
+    #
+    #     for i_basin in range(1, 6):  # loop over basins as defined in figure 3a)
+    #
+    #         print('--------------')
+    #         print('BASIN: ', i_basin)
+    #         print('--------------')
+    #
+    #         # define basin region
+    #         basin = np.array([1 if r[i] == i_basin else 0 for i in range(len(r))])
+    #
+    #         # constrain to particles that start in the respective basin
+    #         l = {0: basin}
+    #         basin_data = pdata.get_subset(l, 2.)
+    #
+    #         # select particles that are in the basin each subsequent year
+    #         for t in range(len(tload)):
+    #             l[t] = basin
+    #         basin_data = pdata.get_subset(l, 2.)
+    #
+    #         lons = basin_data.lons.filled(np.nan)
+    #         lats = basin_data.lats.filled(np.nan)
+    #         times = basin_data.times.filled(np.nan)
+    #         np.savez(outdir_paper + 'EntropyMatrix/Reduced_particles_' + str(i_basin), lons=lons, lats=lats,
+    #                  times=times)
+
+    pdata = ParticleData.from_nc(filepath, "", tload)
+
+
+    def compute_transfer_matrix():
+        # deg_labels is the choice of square binning
+
+        for i_basin in range(1, 6):
+
+            # load reduced particle data for each basin
+            pdata = np.load(outdir_paper + 'EntropyMatrix/Reduced_particles_' + str(i_basin) + '.npz', 'r')
+            lons = pdata['lons']
+            lats = pdata['lats']
+            times = pdata['times']
+            del pdata
+            pdata_ocean = ParticleData(lons=lons, lats=lats, times=times)
+
+            # Define labels according to initial position
+            transfer_matrix = {}
+            pdata_ocean.set_labels(deg_labels, 0)
+            l0 = pdata_ocean.label
+            N = len(np.unique(l0))
+
+            # get existing labels and translate them into labels 0, ...., N-1
+            unique, counts = np.unique(l0, return_counts=True)
+            py_labels = dict(list(zip(unique, list(range(N)))))
+            original_labels = dict(list(zip(list(range(N)), unique)))
+
+            # compute transfer matrix
+            for t in range(0, len(lons[0])):
+                n = np.zeros((N, N))
+                pdata_ocean.set_labels(deg_labels, t)
+                l = pdata_ocean.label
+
+                for j in range(len(l)):
+                    if l[j] in l0:  # restrict to the existing labels (at t=0)
+                        n[py_labels[l0[j]], py_labels[l[j]]] += 1
+
+                transfer_matrix[t] = n
+
+            np.savez(outdir_paper + 'EntropyMatrix/n_matrix_deg' + str(int(deg_labels)) + '/n_matrix_' + str(i_basin),
+                     n=transfer_matrix, original_labels=original_labels)
+
+    def plot_spatial_entropy():
+        # function to get the spatial entropy
+
+        Lons_edges = np.linspace(-180, 180, int(360 / deg_labels) + 1)
+        Lats_edges = np.linspace(-90, 90, int(180 / deg_labels) + 1)
+        Lons_centered = np.array([(Lons_edges[i] + Lons_edges[i + 1]) / deg_labels for i in range(len(Lons_edges) - 1)])
+        Lats_centered = np.array([(Lats_edges[i] + Lats_edges[i + 1]) / deg_labels for i in range(len(Lats_edges) - 1)])
+
+        fig = plt.figure(figsize=(12, 8))
+        gs1 = gridspec.GridSpec(2, 2)
+        gs1.update(wspace=0.15, hspace=0.)
+
+        labels = ['a) ', 'b) ', 'c) ', 'd) ']
+
+        for t, k in zip([1, 3, 6, 10], list(range(4))):
+            T = Times[t]
+
+            S_loc = np.zeros(len(Lons_centered) * len(Lats_centered))  # final entropy field
+
+            for i_basin in range(1, 6):
+                # load data
+                data = np.load(outdir_paper + 'EntropyMatrix/n_matrix_deg' + str(int(deg_labels)) + '/n_matrix_' + str(
+                    i_basin) + '.npz', 'r')
+                n_matrix = data['n'].tolist()
+                original_labels = data['original_labels'].tolist()
+                n = n_matrix[t]
+
+                # row-normalize n
+                for i in range(len(n)):
+                    s = np.sum(n[i, :])
+                    if s != 0:
+                        n[i, :] /= s
+                    else:
+                        n[i, :] = 0
+
+                # column-normalize
+                for i in range(len(n)):
+                    s = np.sum(n[:, i])
+                    if s != 0:
+                        n[:, i] /= s
+                    else:
+                        n[:, i] = 0
+
+                # Compute entropy for each location
+                S = {}
+                for j in range(len(n)):
+                    s = 0
+                    for i in range(len(n)):
+                        if n[i, j] != 0:
+                            s -= n[i, j] * np.log(n[i, j])
+
+                    S[original_labels[j]] = s
+
+                # maximum entropy
+                N = len(np.unique(list(original_labels.keys())))
+                maxS = np.log(N)
+
+                for i in range(len(S_loc)):
+                    if i in list(S.keys()):
+                        S_loc[i] = S[i] / maxS
+
+            plt.subplot(gs1[k])
+
+            S_loc = S_loc.reshape((len(Lats_centered), len(Lons_centered)))
+            S_loc = np.roll(S_loc, int(180 / deg_labels))
+            m = Basemap(projection='robin', lon_0=0, resolution='c')
+            m.drawparallels([-60, -30, 0, 30, 60], labels=[True, False, False, True], color='w', linewidth=1.2, size=9)
+            m.drawmeridians([-150, -60, 0, 60, 150], labels=[False, False, False, True], color='w', linewidth=1.2,
+                            size=9)
+            m.drawcoastlines()
+            m.fillcontinents(color='lightgrey')
+
+            lon_bins_2d, lat_bins_2d = np.meshgrid(Lons_edges, Lats_edges)
+            xs, ys = m(lon_bins_2d, lat_bins_2d)
+            assert (np.max(S_loc) <= 1)
+            p = plt.pcolormesh(xs, ys, S_loc, cmap='magma', vmin=0, vmax=1, rasterized=True)
+            plt.title(labels[k] + str(T), size=12, y=1.01)
+
+        # color bar on the right
+        fig.subplots_adjust(right=0.8)
+        cbar_ax = fig.add_axes([0.822, 0.35, 0.015, 0.4])
+        cbar = fig.colorbar(p, cax=cbar_ax)
+        cbar.ax.tick_params(labelsize=11)
+        cbar.set_label(r'$S/S_{max}$', size=12)
+        fig.savefig(outdir_paper + figure_title, dpi=300, bbox_inches='tight')
+
+    reduce_particleset()
+    compute_transfer_matrix()
+    plot_spatial_entropy()
+
+
+def plot_polar_angles(filepath, savepath_hist=None, savepath_timeseries=None):
+    timestamps = np.arange(0, 300, 10)
     nc = netCDF4.Dataset(filepath + ".nc")
     dir_x = nc.variables["dir_x"][:][:, timestamps]
     dir_y = nc.variables["dir_y"][:][:, timestamps]
@@ -217,7 +479,7 @@ def plot_polar_angles(filepath, savepath=None):
     up = np.array([0., 0., -1])
 
     theta = np.zeros_like(dir_x)
-    mean = np.zeros(timestamps.size, dtype=int)
+    mean = np.zeros(timestamps.size)
 
     for t in tqdm(range(timestamps.size)):
         fig = plt.figure(figsize=(12, 9))
@@ -226,9 +488,10 @@ def plot_polar_angles(filepath, savepath=None):
             theta[p, t] = vg.angle(up, orientation)
 
         n = theta[:, t].size
-        x = np.sort(theta[:, t].flatten())
-        y = np.array(range(n)) / float(n)
-        mean[t] = x[np.argmax(y >= .5)]
+        # x = np.sort(theta[:, t].flatten())
+        # y = np.array(range(n)) / float(n)
+        #mean[t] = x[np.argmax(y >= .5)]
+        mean[t] = np.mean(theta[:, t])
         # ylims = [400, 1000]
         # text_x = [0.1, 0.2]
         # text_y = [200, 500]
@@ -240,13 +503,13 @@ def plot_polar_angles(filepath, savepath=None):
         plt_hist.set_xlabel("Mean Polar angle (deg)", fontsize=25)
         plt_hist.set_ylabel("Count", fontsize=25)
         plt_hist.axvline(mean[t], ymin=0., ymax=plt_hist.get_ylim()[1], color='red')
-        plt_hist.text(137, 120, "mean =%4.1f" % mean[t], fontsize=25, color='red')
+        plt_hist.text(137, 120, "mean =%2.1f" % mean[t], fontsize=25, color='red')
         for tick in plt_hist.xaxis.get_major_ticks():
             tick.label.set_fontsize(20)
         for tick in plt_hist.yaxis.get_major_ticks():
             tick.label.set_fontsize(20)
 
-        fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/theta_10000p_30s_0.01dt_0.05sdt_initunif_mot/10000p_theta_hist_" + str(int(t)) + "s")
+        fig.savefig(savepath_hist + str(int(t)))
         plt.close('plt_hist')
     # np.save(filepath + '_theta.npy', theta)
 
@@ -256,23 +519,412 @@ def plot_polar_angles(filepath, savepath=None):
     plt_means.set_xlabel("Time (s)", fontsize=25)
     plt_means.set_ylabel("Polar angle (deg)", fontsize=25)
     plt_means.set_xlim(0, 30)
-    plt_means.plot(np.arange(0, 31, 1), mean, '-bo', linewidth=2, markersize=3)
+    plt_means.set_ylim(100, 0)
+    plt_means.plot(np.arange(0, 30), mean, '-bo', linewidth=2, markersize=3)
     for tick in plt_means.xaxis.get_major_ticks():
         tick.label.set_fontsize(20)
     for tick in plt_means.yaxis.get_major_ticks():
         tick.label.set_fontsize(20)
-    fig.savefig(
-        "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/theta_10000p_30s_0.01dt_0.05sdt_initunif_mot/10000p_theta_over_time")
+    fig.savefig(savepath_timeseries)
     plt.close('plt_means')
 
 
+def plot_trajectories(sample, orientations, filepath, savepath=None):
+    from mpl_toolkits.mplot3d import Axes3D
+    import mpl_toolkits.mplot3d.art3d as art3d
+    step = 1
+
+    timestamps = np.arange(0, 300, step)
+    timestamps[0] = 1
+
+    nc = netCDF4.Dataset(filepath + ".nc")
+    x = nc.variables["lon"][:][sample][:, timestamps]
+    y = nc.variables["lat"][:][sample][:, timestamps]
+    z = nc.variables["z"][:][sample][:, timestamps]
+    if orientations:
+        dir_x = nc.variables["dir_x"][:][sample][:, timestamps]
+        dir_y = nc.variables["dir_y"][:][sample][:, timestamps]
+        dir_z = nc.variables["dir_z"][:][sample][:, timestamps]
+    nc.close()
+
+    fig = plt.figure(figsize=(15, 15))
+
+    ax = plt.axes(projection='3d')
+    ax.set_title("Particle Trajectories", fontsize=20)
+    ax.set_xlabel("Longitude", fontsize=20)
+    ax.set_ylabel("Latitude", fontsize=20)
+    ax.set_zlabel("Depth", fontsize=20)
+
+    m = 1
+    for p in tqdm(range(len(sample))):
+        ax.scatter(x[p, 0], y[p, 0], -z[p, 0], 'c', c='k', s=6.0)  # mark start points
+        ax.plot(x[p, :], y[p, :], -z[p, :], 'o', markersize=4)
+        if orientations:
+            ax.quiver(x[p, ::m], y[p, ::m], -z[p, ::m],
+                  dir_x[p, ::m], dir_y[p, ::m], -dir_z[p, ::m],
+                  length=7, color='k')
+
+    # ax.set_xlim3d(0, 720)
+    # ax.set_ylim3d(0, 720)
+    # ax.set_zlim3d(-180, 0)
+    # plt.subplots_adjust(top=0.9)
+
+    fig.savefig(savepath)
+
+
+def plot_polar_angles_superimposed(filepaths, colours, labels, savepath_timeseries=None):
+
+    def extract_polar_angles(filepath):
+        timestamps = np.arange(0, 300, 10)
+        nc = netCDF4.Dataset(filepath + ".nc")
+        dir_x = nc.variables["dir_x"][:][:, timestamps]
+        dir_y = nc.variables["dir_y"][:][:, timestamps]
+        dir_z = nc.variables["dir_z"][:][:, timestamps]
+
+        up = np.array([0., 0., -1])
+
+        theta = np.zeros_like(dir_x)
+        mean = np.zeros(timestamps.size)
+
+        for t in range(timestamps.size):
+            for p in range(dir_x.shape[0]):
+                orientation = np.array((dir_x[p, t], dir_y[p, t], dir_z[p, t]))
+                theta[p, t] = vg.angle(up, orientation)
+
+            mean[t] = np.mean(theta[:, t])
+
+        return mean
+
+    timeseries = []
+    with tqdm(total=len(filepaths)) as pbar:
+        for file in filepaths:
+            timeseries.append(extract_polar_angles(file))
+            pbar.update(1)
+
+
+    fig = plt.figure(figsize=(12, 9))
+    plt_means = plt.subplot(111)
+    plt_means.set_title("Mean Particle Polar Angles over time", fontsize=25)
+    plt_means.set_xlabel("Time (s)", fontsize=25)
+    plt_means.set_ylabel("Polar angle (deg)", fontsize=25)
+    plt_means.set_xlim(0, 30)
+    plt_means.set_ylim(100, 0)
+    plt_means.plot(np.arange(0, 30), timeseries[0], '-o', color=colours[:, 0], linewidth=2, markersize=3, label=labels[0])
+    plt_means.plot(np.arange(0, 30), timeseries[1], '-o', color=colours[:, 1], linewidth=2, markersize=3, label=labels[1])
+    plt_means.plot(np.arange(0, 30), timeseries[2], '-o', color=colours[:, 2], linewidth=2, markersize=3, label=labels[2])
+    plt_means.plot(np.arange(0, 30), timeseries[3], '-o', color=colours[:, 3], linewidth=2, markersize=3, label=labels[3])
+    plt_means.plot(np.arange(0, 30), timeseries[4], '-o', color=colours[:, 4], linewidth=2, markersize=3, label=labels[4])
+    plt_means.legend()
+    for tick in plt_means.xaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for tick in plt_means.yaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    fig.savefig(savepath_timeseries)
+    plt.close('plt_means')
+
+
+def plot_trajectories(sample, orientations, filepath, savepath=None):
+    from mpl_toolkits.mplot3d import Axes3D
+    import mpl_toolkits.mplot3d.art3d as art3d
+    step = 1
+
+    timestamps = np.arange(0, 300, step)
+    timestamps[0] = 1
+
+    nc = netCDF4.Dataset(filepath + ".nc")
+    x = nc.variables["lon"][:][sample][:, timestamps]
+    y = nc.variables["lat"][:][sample][:, timestamps]
+    z = nc.variables["z"][:][sample][:, timestamps]
+    if orientations:
+        dir_x = nc.variables["dir_x"][:][sample][:, timestamps]
+        dir_y = nc.variables["dir_y"][:][sample][:, timestamps]
+        dir_z = nc.variables["dir_z"][:][sample][:, timestamps]
+    nc.close()
+
+    fig = plt.figure(figsize=(15, 15))
+
+    ax = plt.axes(projection='3d')
+    ax.set_title("Particle Trajectories", fontsize=20)
+    ax.set_xlabel("Longitude", fontsize=20)
+    ax.set_ylabel("Latitude", fontsize=20)
+    ax.set_zlabel("Depth", fontsize=20)
+
+    m = 1
+    for p in tqdm(range(len(sample))):
+        ax.scatter(x[p, 0], y[p, 0], -z[p, 0], 'c', c='k', s=6.0)  # mark start points
+        ax.plot(x[p, :], y[p, :], -z[p, :], 'o', markersize=4)
+        if orientations:
+            ax.quiver(x[p, ::m], y[p, ::m], -z[p, ::m],
+                  dir_x[p, ::m], dir_y[p, ::m], -dir_z[p, ::m],
+                  length=7, color='k')
+
+    # ax.set_xlim3d(0, 720)
+    # ax.set_ylim3d(0, 720)
+    # ax.set_zlim3d(-180, 0)
+    # plt.subplots_adjust(top=0.9)
+
+    fig.savefig(savepath)
+
+
+def animate_directions(p, filepath, savepath=None):
+    from mpl_toolkits.mplot3d import Axes3D
+    import mpl_toolkits.mplot3d.art3d as art3d
+    from matplotlib.animation import FuncAnimation
+
+    step = 1
+    timestamps = np.arange(0, 300, step)
+    timestamps[0] = 1
+    nc = netCDF4.Dataset(filepath + ".nc")
+    dir_x = nc.variables["dir_x"][:][p, timestamps]
+    dir_y = nc.variables["dir_y"][:][p, timestamps]
+    dir_z = nc.variables["dir_z"][:][p, timestamps]
+    nc.close()
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+    fig.set_tight_layout(True)
+
+    # Query the figure's on-screen size and DPI. Note that when saving the figure to
+    # a file, we need to provide a DPI for that separately.
+    print('fig size: {0} DPI, size in inches {1}'.format(
+        fig.get_dpi(), fig.get_size_inches()))
+
+    # Create a sphere
+    r = .5
+    pi = np.pi
+    cos = np.cos
+    sin = np.sin
+    phi, theta = np.mgrid[0.0:pi:100j, 0.0:2.0 * pi:100j]
+    x = r * sin(phi) * cos(theta)
+    y = r * sin(phi) * sin(theta)
+    z = r * cos(phi)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_title("Particle %d Orientation" %p, fontsize=25)
+    ax.set_xlabel("", fontsize=25)
+    ax.set_ylabel("", fontsize=25)
+    ax.set_zlabel("", fontsize=25)
+    ax.plot_surface(x, y, z, rstride=1, cstride=1, color='c', alpha=0.2, linewidth=0)
+    ax.set_xlim([-1, 1])
+    ax.set_ylim([-1, 1])
+    ax.set_zlim([-1, 1])
+    ax.set_aspect("equal")
+    ax.axis("off")
+    for t in timestamps:
+        arrow = ax.quiver(r*dir_x[t], r*dir_y[t], -r*dir_z[t], dir_x[t], dir_y[t], -dir_z[t], length=1, color='k')
+        fig.savefig(savepath + "%03d.png" % t)
+        arrow.remove()
+
+
+def plot_particlewise_angles(sample, filepath, savepath=None):
+
+    def cart2spher(v_x, v_y, v_z):
+        import math
+        r = np.sqrt(np.power(v_x, 2) + np.power(v_y, 2) + np.power(v_z, 2))
+        phi = math.pi - np.arctan2(np.sqrt(np.power(v_x, 2) + np.power(v_y, 2)), v_z)  # pi - ans because z is positive downwards
+        theta = np.arctan2(v_y, v_x)
+        return r, phi, theta
+
+    step = 1
+    timestamps = np.arange(0, 300, step)
+    timestamps[0] = 1
+
+    nc = netCDF4.Dataset(filepath + ".nc")
+    dir_x = nc.variables["dir_x"][:][sample][:, timestamps]
+    dir_y = nc.variables["dir_y"][:][sample][:, timestamps]
+    dir_z = nc.variables["dir_z"][:][sample][:, timestamps]
+    nc.close()
+
+    fig = plt.figure(figsize=(12, 14))
+    plt_p_rs = fig.add_subplot(311)
+    plt_p_rs.set_title("Sample of Particle Orientation magnitudes over time", fontsize=25)
+    # plt_vort_mags.set_xlabel("Time (s)", fontsize=25)
+    plt_p_rs.set_ylabel("r", fontsize=25)
+    plt_p_rs.set_ylim(0, 1)
+    plt_p_elevs = fig.add_subplot(312)
+    plt_p_elevs.set_title("Sample of Particle Elevation Angles over time", fontsize=25)
+    # plt_p_elevs.set_xlabel("Timestep", fontsize=25)
+    plt_p_elevs.set_ylabel("Phi (deg)", fontsize=25)
+    plt_p_elevs.set_ylim(180, 0)
+    plt_p_azims = fig.add_subplot(313)
+    plt_p_azims.set_title("Sample of Particle Azimuthal angles over time", fontsize=25)
+    # plt_p_azims.set_xlabel("Time (s)", fontsize=25)
+    plt_p_azims.set_ylabel("Theta (deg)", fontsize=25)
+    plt_p_azims.set_ylim(0, 360)
+
+    for p in tqdm(range(len(sample))):
+        r_p, phi_p, theta_p = cart2spher(dir_x[p, :], dir_y[p, :], dir_z[p, :])
+        plt_p_rs.plot(r_p, '.-', linewidth=2)
+        plt_p_elevs.plot(phi_p * 57.2958, '.-', linewidth=2)
+        plt_p_azims.plot(theta_p * 57.2958 + 180, '.-', linewidth=2)
+    for tick in plt_p_rs.xaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for tick in plt_p_rs.yaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for tick in plt_p_elevs.xaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for tick in plt_p_elevs.yaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for tick in plt_p_azims.xaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for tick in plt_p_azims.yaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    plt.subplots_adjust(hspace=0.3)
+    fig.savefig(savepath)
+
+
+def plot_particlewise_velocities(sample, filepath, savepath=None):
+    step = 1
+    timestamps = np.arange(0, 300, step)
+    timestamps[0] = 1
+
+    nc = netCDF4.Dataset(filepath + ".nc")
+    u = nc.variables["u"][:][sample][:, timestamps]#[sample, timestamps]
+    v = nc.variables["v"][:][sample][:, timestamps]
+    w = nc.variables["w"][:][sample][:, timestamps]
+    nc.close()
+
+    fig = plt.figure(figsize=(14, 7))
+    plt_vel_mags = fig.add_subplot(111)
+    plt_vel_mags.set_title("Sample of Fluid Velocity magnitudes over time", fontsize=25)
+    plt_vel_mags.set_xlabel("Timestep", fontsize=25)
+    plt_vel_mags.set_ylabel("V (m/s)", fontsize=25)
+
+    for p in tqdm(range(len(sample))):
+        v_p = np.sqrt(np.power(u[p, :], 2) + np.power(v[p, :], 2) + np.power(w[p, :], 2))
+        plt_vel_mags.plot(v_p / 1200, '.-', linewidth=2)
+
+    for tick in plt_vel_mags.xaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for tick in plt_vel_mags.yaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    # for tick in plt_vort_phis.xaxis.get_major_ticks():
+    #     tick.label.set_fontsize(20)
+    # for tick in plt_vort_phis.yaxis.get_major_ticks():
+    #     tick.label.set_fontsize(20)
+    # for tick in plt_vort_thetas.xaxis.get_major_ticks():
+    #     tick.label.set_fontsize(20)
+    # for tick in plt_vort_thetas.yaxis.get_major_ticks():
+    #     tick.label.set_fontsize(20)
+    fig.savefig(savepath)
+
+
+def plot_particlewise_vorticities(sample, filepath, savepath=None):
+
+    def cart2spher(v_x, v_y, v_z):
+        import math
+        r = np.sqrt(np.power(v_x, 2) + np.power(v_y, 2) + np.power(v_z, 2))
+        phi = math.pi - np.arctan2(np.sqrt(np.power(v_x, 2) + np.power(v_y, 2)), v_z)  # pi - ans because z is positive downwards
+        theta = np.arctan2(v_y, v_x)
+        return r, phi, theta
+
+    step = 1
+    timestamps = np.arange(0, 300, step)
+    timestamps[0] = 1
+
+    nc = netCDF4.Dataset(filepath + ".nc")
+    vort_x = nc.variables["vort_x"][:][sample][:, timestamps]
+    vort_y = nc.variables["vort_y"][:][sample][:, timestamps]
+    vort_z = nc.variables["vort_z"][:][sample][:, timestamps]
+    nc.close()
+
+    fig = plt.figure(figsize=(14, 16))
+    plt_vort_mags = fig.add_subplot(311)
+    plt_vort_mags.set_title("Sample of Vorticity magnitudes over time", fontsize=25)
+    # plt_vort_mags.set_xlabel("Time (s)", fontsize=25)
+    plt_vort_mags.set_ylabel("|Omega|", fontsize=25)
+    # plt_vort_mags.set_ylim(180, 0)
+    plt_vort_phis = fig.add_subplot(312)
+    plt_vort_phis.set_title("Sample of Vorticity elevation angles over time", fontsize=25)
+    # plt_vort_phis.set_xlabel("Time (s)", fontsize=25)
+    plt_vort_phis.set_ylabel("Phi (deg)", fontsize=25)
+    plt_vort_phis.set_ylim(180, 0)
+    plt_vort_thetas = fig.add_subplot(313)
+    plt_vort_thetas.set_title("Sample of Vorticity azimuthal angles over time", fontsize=25)
+    plt_vort_thetas.set_xlabel("Timestep", fontsize=25)
+    plt_vort_thetas.set_ylabel("Theta (deg)", fontsize=25)
+    plt_vort_thetas.set_ylim(0, 360)
+
+    for p in tqdm(range(len(sample))):
+        r_p, phi_p, theta_p = cart2spher(vort_x[p, :], vort_y[p, :], vort_z[p, :])
+        plt_vort_mags.plot(r_p, '.-', linewidth=2)
+        plt_vort_phis.plot(phi_p * 57.2958, '.-', linewidth=2)
+        plt_vort_thetas.plot(theta_p * 57.2958 + 180, '.-', linewidth=2)
+
+
+    for tick in plt_vort_mags.xaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for tick in plt_vort_mags.yaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for tick in plt_vort_phis.xaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for tick in plt_vort_phis.yaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for tick in plt_vort_thetas.xaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    for tick in plt_vort_thetas.yaxis.get_major_ticks():
+        tick.label.set_fontsize(20)
+    plt.subplots_adjust(hspace=0.3)
+    fig.savefig(savepath)
+
 
 if __name__ == "__main__":
-    filepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/trajectories_10000p_30s_0.01dt_0.05sdt_initunif_mot"
-    # savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/dead/density_10000p_30s_0.01dt_0.05sdt_initunif_dead/"
-    plot_polar_angles(filepath)#, savepath)
+
+    #
+    # dir = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/vswim_expt/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_0.1vswim"
+    # filepath = dir + "/trajectories_100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_0.1vswim"
+    # savepath_hist = dir + "/theta/mean_polar_hist_"
+    # savepath_timeseries = dir + "/theta/mean_polar_timeseries.png"
+    # savepath_trajectories = dir + "/traj/trajectories.png"
+    # savepath_trajectories_w_dirs = dir + "/traj/trajectories_withdirs.png"
+    # savepath_pwise_angles = dir + "/theta/plotpolar.png"
+    # # savepath_pwise_vels = dir + "/velvorts/plotvels.png"
+    # # savepath_pwise_vorts = dir + "/velvorts/plotvorts.png"
+    #
+    # plot_polar_angles(filepath, savepath_hist, savepath_timeseries)
+    # sample = list(np.random.choice(100000, size=10))
+    # print(sample)
+    # plot_trajectories(sample[0:5], False, filepath, savepath_trajectories)
+    # plot_trajectories(sample[0:2], True, filepath, savepath_trajectories_w_dirs)
+    # plot_particlewise_angles(sample, filepath, savepath_pwise_angles)
+
+    # plot_particlewise_velocities(sample, filepath, savepath_pwise_vels)
+    # plot_particlewise_vorticities(sample, filepath, savepath_pwise_vorts)
+
+    # savepath_animate_dirs = "/home/alexander/Desktop/temp_results/"
+    # animate_directions(5, filepath, savepath_animate_dirs)
+
 
     # save_plot_dir = "/home/alexander/Documents/QMEE/LSR/fig/velocity_dist.png"
     # H, bin_edges = histogram_cell_velocities("/media/alexander/AKC Passport 2TB/Maarten/sim022/F*.nc.022", 100, saveplot=save_plot_dir)
     # np.save("/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/H.npy", H)
     # np.save("/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/bin_edges.npy", bin_edges)
+
+    # # superimposed polar angle plots
+    # B1 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/B_expt/100000p_30s_0.01dt_0.1sdt_1.0B_initunif_mot_1.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_1.0B_initunif_mot_1.0vswim"
+    # B2 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim"
+    # B3 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/B_expt/100000p_30s_0.01dt_0.1sdt_3.0B_initunif_mot_1.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_3.0B_initunif_mot_1.0vswim"
+    # B5 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/B_expt/100000p_30s_0.01dt_0.1sdt_5.0B_initunif_mot_1.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_5.0B_initunif_mot_1.0vswim"
+    # B7 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/B_expt/100000p_30s_0.01dt_0.1sdt_7.0B_initunif_mot_1.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_7.0B_initunif_mot_1.0vswim"
+    # filepaths_B = [B1, B2, B3, B5, B7]
+    # V1 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/vswim_expt/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_0.1vswim/trajectories_100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_0.1vswim"
+    # V2 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/vswim_expt/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_0.5vswim/trajectories_100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_0.5vswim"
+    # V3 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim"
+    # V4 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/vswim_expt/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.5vswim/trajectories_100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.5vswim"
+    # V5 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/vswim_expt/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_2.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_2.0vswim"
+    # filepaths_V = [V1, V2, V3, V4, V5]
+    #
+    # colours_B = np.zeros((3, 5))
+    # colours_B[0, :] = np.linspace(0, 1, 5)
+    # labels_B = ["B=1", "B=2", "B=3", "B=5", "B=7"]
+    # colours_V = np.zeros((3, 5))
+    # colours_V[1, :] = np.linspace(0, 1, 5)
+    # labels_V = ["V=0.1", "V=0.5", "V=1.0", "V=1.5", "V=2.0"]
+    #
+    # plot_polar_angles_superimposed(filepaths_B, colours_B, labels_B, "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/comparison/theta/mean_polar_timeseries_Bvar.png")
+    # plot_polar_angles_superimposed(filepaths_V, colours_V, labels_V, "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/comparison/theta/mean_polar_timeseries_vswimvar.png")
+
+    plot_voro_concs(
+        '/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim',
+        './')
+

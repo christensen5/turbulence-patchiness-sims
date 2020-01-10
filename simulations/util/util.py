@@ -10,7 +10,7 @@ from parcels import Field
 
 
 __all__ = ['rand_unit_vect_3D', 'extract_timestamps', 'find_max_velocities', 'extract_vorticities_c_grid',
-           'uniform_init_field', 'conc_init_field', 'swim_speed_dist']
+           'uniform_init_field', 'conc_init_field', 'swim_speed_dist', 'join_resumed_sims']
 
 
 def rand_unit_vect_3D():
@@ -302,3 +302,63 @@ def swim_speed_dist(num_particles, dist='simulations/util/swim_speed_distributio
         b[i] = pdf(u) / 1000000  # convert um -> m
 
     return b
+
+
+def join_resumed_sims(filepaths, savepath):
+    """
+    A method to aggregate two or more time-contiguous simulations into a single netCDF file.
+    :param filepaths: List of paths to files to aggregate.
+
+    :param savepath: Path to save aggregated file.
+    """
+    paths = sorted(glob(str(filepaths))) if not isinstance(filepaths, list) else filepaths
+    if len(paths) == 0:
+        notfound_paths = filepaths
+        raise IOError("FieldSet files not found: %s" % str(notfound_paths))
+
+    # extract variable names from first simulation.
+    nc_first = netCDF4.Dataset(paths[0])
+    variables_dict = {key: None for key in nc_first.variables.keys()}
+
+    for var in list(variables_dict.keys()):
+        variables_dict[var] = nc_first.variables[var][:]
+
+    for fp in tqdm(paths[1:]):
+        if not os.path.exists(fp):
+            raise IOError("NetCDF file not found: %s" % str(fp))
+
+        nc = netCDF4.Dataset(fp)
+        for var in list(variables_dict.keys()):
+            # ignore variables introduced in later sims but absent from the first.
+            try:
+                nc.variables[var]
+            except KeyError:
+                print("NetCDF file %s did not contain a variable called %s" % (str(fp), var))
+                continue
+            if len(nc.variables[var].shape) == 1:  # ignore variables with values saved only at start of sim.
+                continue
+            else:
+                #nc_new.variables[var][:] = np.concatenate((nc_new.variables[var][:], nc.variables[var][:]), axis=1)
+                variables_dict[var] = np.concatenate((variables_dict[var], nc.variables[var][:]), axis=1)
+        nc.close()
+
+    nc_new = netCDF4.Dataset(savepath, "w", format="NETCDF4")
+    nc_new.createDimension('obs', None)
+    nc_new.createDimension('traj', None)
+    nc_new.set_auto_mask(False)
+    for var in list(variables_dict.keys()):
+        nc_new.createVariable(var, nc_first.variables[var].dtype, nc_first.variables[var].dimensions)
+        nc_new.variables[var][:] = variables_dict[var]
+
+    nc_first.close()
+    nc_new.sync()
+    nc_new.close()
+
+
+if __name__ == "__main__":
+    input1 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_15s_0.01dt_0.1sdt_initunif_mot_tloop.nc"
+    input2 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_15s_0.01dt_0.1sdt_initunif_mot_tloop_RESUME.nc"
+    output = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_30s_0.01dt_0.1sdt_initunif_mot_tloop_JOINED.nc"
+
+    join_resumed_sims([input1, input2], output)
+

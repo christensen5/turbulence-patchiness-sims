@@ -11,8 +11,8 @@ from math import ceil, floor
 # mlab.options.backend = 'envisage'
 
 import sys
-sys.path.append('/home/alexander/Documents/surface_mixing/Analysis/')
-from ana_objects import ParticleData
+# sys.path.append('/home/alexander/Documents/surface_mixing/Analysis/')
+# from ana_objects import ParticleData
 
 all = ['reformat_for_animate', 'reformat_for_voronoi', 'histogram_cell_velocities', 'plot_densities', 'plot_voro_concs', 'plot_polar_angles', 'plot_polar_angles_superimposed',
        'plot_trajectories', 'plot_particlewise_angles', 'plot_particlewise_velocities', 'plot_particlewise_vorticities']
@@ -295,178 +295,178 @@ def plot_voro_concs(filepath, savepath=None):
 
 
 
-def plot_entropies(filepath):
-    tload = [0, -1]
-    # time_origin=datetime.datetime(2000,1,5)
-    # Times = [(time_origin + datetime.timedelta(days=t * 5)).strftime("%Y-%m") for t in tload]
-
-    # def reduce_particleset():
-    #     # Load particle data
-    #     pdir = datadir + 'MixingEntropy/'  # Data directory
-    #     fname = 'surfaceparticles_y2000_m1_d5_simdays3650_pos'  # F
-    #
-    #     # load data
-    #     pdata = ParticleData.from_nc(pdir=pdir, fname=fname, Ngrids=40, tload=tload)
-    #     pdata.remove_nans()
-    #
-    #     # Get those particles that start and end in the chosen basin
-    #     r = np.load(outdir_paper + "EntropyMatrix/Entropy_Clusters.npy")
-    #
-    #     for i_basin in range(1, 6):  # loop over basins as defined in figure 3a)
-    #
-    #         print('--------------')
-    #         print('BASIN: ', i_basin)
-    #         print('--------------')
-    #
-    #         # define basin region
-    #         basin = np.array([1 if r[i] == i_basin else 0 for i in range(len(r))])
-    #
-    #         # constrain to particles that start in the respective basin
-    #         l = {0: basin}
-    #         basin_data = pdata.get_subset(l, 2.)
-    #
-    #         # select particles that are in the basin each subsequent year
-    #         for t in range(len(tload)):
-    #             l[t] = basin
-    #         basin_data = pdata.get_subset(l, 2.)
-    #
-    #         lons = basin_data.lons.filled(np.nan)
-    #         lats = basin_data.lats.filled(np.nan)
-    #         times = basin_data.times.filled(np.nan)
-    #         np.savez(outdir_paper + 'EntropyMatrix/Reduced_particles_' + str(i_basin), lons=lons, lats=lats,
-    #                  times=times)
-
-    pdata = ParticleData.from_nc(filepath, "", tload)
-
-
-    def compute_transfer_matrix():
-        # deg_labels is the choice of square binning
-
-        for i_basin in range(1, 6):
-
-            # load reduced particle data for each basin
-            pdata = np.load(outdir_paper + 'EntropyMatrix/Reduced_particles_' + str(i_basin) + '.npz', 'r')
-            lons = pdata['lons']
-            lats = pdata['lats']
-            times = pdata['times']
-            del pdata
-            pdata_ocean = ParticleData(lons=lons, lats=lats, times=times)
-
-            # Define labels according to initial position
-            transfer_matrix = {}
-            pdata_ocean.set_labels(deg_labels, 0)
-            l0 = pdata_ocean.label
-            N = len(np.unique(l0))
-
-            # get existing labels and translate them into labels 0, ...., N-1
-            unique, counts = np.unique(l0, return_counts=True)
-            py_labels = dict(list(zip(unique, list(range(N)))))
-            original_labels = dict(list(zip(list(range(N)), unique)))
-
-            # compute transfer matrix
-            for t in range(0, len(lons[0])):
-                n = np.zeros((N, N))
-                pdata_ocean.set_labels(deg_labels, t)
-                l = pdata_ocean.label
-
-                for j in range(len(l)):
-                    if l[j] in l0:  # restrict to the existing labels (at t=0)
-                        n[py_labels[l0[j]], py_labels[l[j]]] += 1
-
-                transfer_matrix[t] = n
-
-            np.savez(outdir_paper + 'EntropyMatrix/n_matrix_deg' + str(int(deg_labels)) + '/n_matrix_' + str(i_basin),
-                     n=transfer_matrix, original_labels=original_labels)
-
-    def plot_spatial_entropy():
-        # function to get the spatial entropy
-
-        Lons_edges = np.linspace(-180, 180, int(360 / deg_labels) + 1)
-        Lats_edges = np.linspace(-90, 90, int(180 / deg_labels) + 1)
-        Lons_centered = np.array([(Lons_edges[i] + Lons_edges[i + 1]) / deg_labels for i in range(len(Lons_edges) - 1)])
-        Lats_centered = np.array([(Lats_edges[i] + Lats_edges[i + 1]) / deg_labels for i in range(len(Lats_edges) - 1)])
-
-        fig = plt.figure(figsize=(12, 8))
-        gs1 = gridspec.GridSpec(2, 2)
-        gs1.update(wspace=0.15, hspace=0.)
-
-        labels = ['a) ', 'b) ', 'c) ', 'd) ']
-
-        for t, k in zip([1, 3, 6, 10], list(range(4))):
-            T = Times[t]
-
-            S_loc = np.zeros(len(Lons_centered) * len(Lats_centered))  # final entropy field
-
-            for i_basin in range(1, 6):
-                # load data
-                data = np.load(outdir_paper + 'EntropyMatrix/n_matrix_deg' + str(int(deg_labels)) + '/n_matrix_' + str(
-                    i_basin) + '.npz', 'r')
-                n_matrix = data['n'].tolist()
-                original_labels = data['original_labels'].tolist()
-                n = n_matrix[t]
-
-                # row-normalize n
-                for i in range(len(n)):
-                    s = np.sum(n[i, :])
-                    if s != 0:
-                        n[i, :] /= s
-                    else:
-                        n[i, :] = 0
-
-                # column-normalize
-                for i in range(len(n)):
-                    s = np.sum(n[:, i])
-                    if s != 0:
-                        n[:, i] /= s
-                    else:
-                        n[:, i] = 0
-
-                # Compute entropy for each location
-                S = {}
-                for j in range(len(n)):
-                    s = 0
-                    for i in range(len(n)):
-                        if n[i, j] != 0:
-                            s -= n[i, j] * np.log(n[i, j])
-
-                    S[original_labels[j]] = s
-
-                # maximum entropy
-                N = len(np.unique(list(original_labels.keys())))
-                maxS = np.log(N)
-
-                for i in range(len(S_loc)):
-                    if i in list(S.keys()):
-                        S_loc[i] = S[i] / maxS
-
-            plt.subplot(gs1[k])
-
-            S_loc = S_loc.reshape((len(Lats_centered), len(Lons_centered)))
-            S_loc = np.roll(S_loc, int(180 / deg_labels))
-            m = Basemap(projection='robin', lon_0=0, resolution='c')
-            m.drawparallels([-60, -30, 0, 30, 60], labels=[True, False, False, True], color='w', linewidth=1.2, size=9)
-            m.drawmeridians([-150, -60, 0, 60, 150], labels=[False, False, False, True], color='w', linewidth=1.2,
-                            size=9)
-            m.drawcoastlines()
-            m.fillcontinents(color='lightgrey')
-
-            lon_bins_2d, lat_bins_2d = np.meshgrid(Lons_edges, Lats_edges)
-            xs, ys = m(lon_bins_2d, lat_bins_2d)
-            assert (np.max(S_loc) <= 1)
-            p = plt.pcolormesh(xs, ys, S_loc, cmap='magma', vmin=0, vmax=1, rasterized=True)
-            plt.title(labels[k] + str(T), size=12, y=1.01)
-
-        # color bar on the right
-        fig.subplots_adjust(right=0.8)
-        cbar_ax = fig.add_axes([0.822, 0.35, 0.015, 0.4])
-        cbar = fig.colorbar(p, cax=cbar_ax)
-        cbar.ax.tick_params(labelsize=11)
-        cbar.set_label(r'$S/S_{max}$', size=12)
-        fig.savefig(outdir_paper + figure_title, dpi=300, bbox_inches='tight')
-
-    reduce_particleset()
-    compute_transfer_matrix()
-    plot_spatial_entropy()
+# def plot_entropies(filepath):
+#     tload = [0, -1]
+#     # time_origin=datetime.datetime(2000,1,5)
+#     # Times = [(time_origin + datetime.timedelta(days=t * 5)).strftime("%Y-%m") for t in tload]
+#
+#     # def reduce_particleset():
+#     #     # Load particle data
+#     #     pdir = datadir + 'MixingEntropy/'  # Data directory
+#     #     fname = 'surfaceparticles_y2000_m1_d5_simdays3650_pos'  # F
+#     #
+#     #     # load data
+#     #     pdata = ParticleData.from_nc(pdir=pdir, fname=fname, Ngrids=40, tload=tload)
+#     #     pdata.remove_nans()
+#     #
+#     #     # Get those particles that start and end in the chosen basin
+#     #     r = np.load(outdir_paper + "EntropyMatrix/Entropy_Clusters.npy")
+#     #
+#     #     for i_basin in range(1, 6):  # loop over basins as defined in figure 3a)
+#     #
+#     #         print('--------------')
+#     #         print('BASIN: ', i_basin)
+#     #         print('--------------')
+#     #
+#     #         # define basin region
+#     #         basin = np.array([1 if r[i] == i_basin else 0 for i in range(len(r))])
+#     #
+#     #         # constrain to particles that start in the respective basin
+#     #         l = {0: basin}
+#     #         basin_data = pdata.get_subset(l, 2.)
+#     #
+#     #         # select particles that are in the basin each subsequent year
+#     #         for t in range(len(tload)):
+#     #             l[t] = basin
+#     #         basin_data = pdata.get_subset(l, 2.)
+#     #
+#     #         lons = basin_data.lons.filled(np.nan)
+#     #         lats = basin_data.lats.filled(np.nan)
+#     #         times = basin_data.times.filled(np.nan)
+#     #         np.savez(outdir_paper + 'EntropyMatrix/Reduced_particles_' + str(i_basin), lons=lons, lats=lats,
+#     #                  times=times)
+#
+#     pdata = ParticleData.from_nc(filepath, "", tload)
+#
+#
+#     def compute_transfer_matrix():
+#         # deg_labels is the choice of square binning
+#
+#         for i_basin in range(1, 6):
+#
+#             # load reduced particle data for each basin
+#             pdata = np.load(outdir_paper + 'EntropyMatrix/Reduced_particles_' + str(i_basin) + '.npz', 'r')
+#             lons = pdata['lons']
+#             lats = pdata['lats']
+#             times = pdata['times']
+#             del pdata
+#             pdata_ocean = ParticleData(lons=lons, lats=lats, times=times)
+#
+#             # Define labels according to initial position
+#             transfer_matrix = {}
+#             pdata_ocean.set_labels(deg_labels, 0)
+#             l0 = pdata_ocean.label
+#             N = len(np.unique(l0))
+#
+#             # get existing labels and translate them into labels 0, ...., N-1
+#             unique, counts = np.unique(l0, return_counts=True)
+#             py_labels = dict(list(zip(unique, list(range(N)))))
+#             original_labels = dict(list(zip(list(range(N)), unique)))
+#
+#             # compute transfer matrix
+#             for t in range(0, len(lons[0])):
+#                 n = np.zeros((N, N))
+#                 pdata_ocean.set_labels(deg_labels, t)
+#                 l = pdata_ocean.label
+#
+#                 for j in range(len(l)):
+#                     if l[j] in l0:  # restrict to the existing labels (at t=0)
+#                         n[py_labels[l0[j]], py_labels[l[j]]] += 1
+#
+#                 transfer_matrix[t] = n
+#
+#             np.savez(outdir_paper + 'EntropyMatrix/n_matrix_deg' + str(int(deg_labels)) + '/n_matrix_' + str(i_basin),
+#                      n=transfer_matrix, original_labels=original_labels)
+#
+#     def plot_spatial_entropy():
+#         # function to get the spatial entropy
+#
+#         Lons_edges = np.linspace(-180, 180, int(360 / deg_labels) + 1)
+#         Lats_edges = np.linspace(-90, 90, int(180 / deg_labels) + 1)
+#         Lons_centered = np.array([(Lons_edges[i] + Lons_edges[i + 1]) / deg_labels for i in range(len(Lons_edges) - 1)])
+#         Lats_centered = np.array([(Lats_edges[i] + Lats_edges[i + 1]) / deg_labels for i in range(len(Lats_edges) - 1)])
+#
+#         fig = plt.figure(figsize=(12, 8))
+#         gs1 = gridspec.GridSpec(2, 2)
+#         gs1.update(wspace=0.15, hspace=0.)
+#
+#         labels = ['a) ', 'b) ', 'c) ', 'd) ']
+#
+#         for t, k in zip([1, 3, 6, 10], list(range(4))):
+#             T = Times[t]
+#
+#             S_loc = np.zeros(len(Lons_centered) * len(Lats_centered))  # final entropy field
+#
+#             for i_basin in range(1, 6):
+#                 # load data
+#                 data = np.load(outdir_paper + 'EntropyMatrix/n_matrix_deg' + str(int(deg_labels)) + '/n_matrix_' + str(
+#                     i_basin) + '.npz', 'r')
+#                 n_matrix = data['n'].tolist()
+#                 original_labels = data['original_labels'].tolist()
+#                 n = n_matrix[t]
+#
+#                 # row-normalize n
+#                 for i in range(len(n)):
+#                     s = np.sum(n[i, :])
+#                     if s != 0:
+#                         n[i, :] /= s
+#                     else:
+#                         n[i, :] = 0
+#
+#                 # column-normalize
+#                 for i in range(len(n)):
+#                     s = np.sum(n[:, i])
+#                     if s != 0:
+#                         n[:, i] /= s
+#                     else:
+#                         n[:, i] = 0
+#
+#                 # Compute entropy for each location
+#                 S = {}
+#                 for j in range(len(n)):
+#                     s = 0
+#                     for i in range(len(n)):
+#                         if n[i, j] != 0:
+#                             s -= n[i, j] * np.log(n[i, j])
+#
+#                     S[original_labels[j]] = s
+#
+#                 # maximum entropy
+#                 N = len(np.unique(list(original_labels.keys())))
+#                 maxS = np.log(N)
+#
+#                 for i in range(len(S_loc)):
+#                     if i in list(S.keys()):
+#                         S_loc[i] = S[i] / maxS
+#
+#             plt.subplot(gs1[k])
+#
+#             S_loc = S_loc.reshape((len(Lats_centered), len(Lons_centered)))
+#             S_loc = np.roll(S_loc, int(180 / deg_labels))
+#             m = Basemap(projection='robin', lon_0=0, resolution='c')
+#             m.drawparallels([-60, -30, 0, 30, 60], labels=[True, False, False, True], color='w', linewidth=1.2, size=9)
+#             m.drawmeridians([-150, -60, 0, 60, 150], labels=[False, False, False, True], color='w', linewidth=1.2,
+#                             size=9)
+#             m.drawcoastlines()
+#             m.fillcontinents(color='lightgrey')
+#
+#             lon_bins_2d, lat_bins_2d = np.meshgrid(Lons_edges, Lats_edges)
+#             xs, ys = m(lon_bins_2d, lat_bins_2d)
+#             assert (np.max(S_loc) <= 1)
+#             p = plt.pcolormesh(xs, ys, S_loc, cmap='magma', vmin=0, vmax=1, rasterized=True)
+#             plt.title(labels[k] + str(T), size=12, y=1.01)
+#
+#         # color bar on the right
+#         fig.subplots_adjust(right=0.8)
+#         cbar_ax = fig.add_axes([0.822, 0.35, 0.015, 0.4])
+#         cbar = fig.colorbar(p, cax=cbar_ax)
+#         cbar.ax.tick_params(labelsize=11)
+#         cbar.set_label(r'$S/S_{max}$', size=12)
+#         fig.savefig(outdir_paper + figure_title, dpi=300, bbox_inches='tight')
+#
+#     reduce_particleset()
+#     compute_transfer_matrix()
+#     plot_spatial_entropy()
 
 
 def plot_polar_angles(filepath, savepath_hist=None, savepath_timeseries=None):

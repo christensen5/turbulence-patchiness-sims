@@ -5,7 +5,7 @@ import sys
 import numpy as np
 from datetime import timedelta
 
-np.random.seed(1234)
+# np.random.seed(1234)
 
 # Set simulation parameters
 num_particles = 100000

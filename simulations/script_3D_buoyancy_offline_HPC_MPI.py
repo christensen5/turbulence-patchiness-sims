@@ -10,7 +10,7 @@ timer.root = timer.Timer('Main')
 timer.init = timer.Timer('Init', parent=timer.root)
 timer.args = timer.Timer('Args', parent=timer.init)
 
-np.random.seed(1234)
+# np.random.seed(1234)
 
 # Set simulation parameters
 num_particles = 100000

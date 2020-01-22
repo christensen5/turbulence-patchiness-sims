@@ -78,11 +78,14 @@ timer.psetinit = timer.Timer('ParticleSetInit', parent=timer.init)
 pset = ParticleSet.from_field(fieldset=fieldset,
                               pclass=pclass,
                               start_field=pfield_uniform,
-			      depth=np.random.rand(num_particles)*180, #90+np.random.rand(num_particles)*60,
+                              depth=np.random.rand(num_particles)*180, #90+np.random.rand(num_particles)*60,
                               size=num_particles)
 # Initialise custom particle variables.
 if motile:
-    swim_init = [.1, .5, 1.5, 2][int(sys.argv[1])-1] * scale_fact * swim_speed_dist(pset.size, dist='/rds/general/user/akc17/home/packages/turbulence-patchiness-sims/simulations/util/swim_speed_distribution.csv')
+    swim_init = scale_fact * swim_speed_dist(pset.size, dist='/rds/general/user/akc17/home/packages/turbulence-patchiness-sims/simulations/util/swim_speed_distribution.csv')
+# In MPI mode, we cannot index swim_init with particle.id since each process only gets a subset of the whole pset;
+# instead we use a counter variable 'i'.
+i = 0
 for particle in pset:
     particle.diameter = scale_fact * np.random.uniform(0.000018, 0.000032)
     if motile:
@@ -90,8 +93,9 @@ for particle in pset:
         particle.dir_x = dir[0]
         particle.dir_y = dir[1]
         particle.dir_z = dir[2]
-        particle.v_swim = swim_init[particle.id]
+        particle.v_swim = swim_init[i]
         particle.B = B
+        i += 1
 
 if motile:
     kernels = pset.Kernel(GyrotaxisRK4_3D_withTemp) + pset.Kernel(periodicBC)

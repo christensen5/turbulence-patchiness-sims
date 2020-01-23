@@ -7,7 +7,7 @@ __all__ = ['Generic3D', 'Akashiwo3D', 'Akashiwo3D_verbose']
 
 class Generic3D(JITParticle):
     temp = Variable('temp', dtype=np.float32, initial=0., to_write=False)
-    diameter = Variable('diameter', dtype=np.float32, initial=None, to_write='once')
+    #diameter = Variable('diameter', dtype=np.float32, initial=None, to_write='once')
 
 
 class Akashiwo3D(JITParticle):

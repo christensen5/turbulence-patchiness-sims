@@ -4,7 +4,10 @@ import os
 import sys
 import numpy as np
 from datetime import timedelta
+import subprocess
 from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
 
 timer.root = timer.Timer('Main')
 timer.init = timer.Timer('Init', parent=timer.root)
@@ -14,17 +17,18 @@ timer.args = timer.Timer('Args', parent=timer.init)
 
 # Set simulation parameters
 num_particles = 100000
-motile = True
+motile = False
 
-filenames = "/rds/general/user/akc17/home/WORK/sim022_vort/F*n.nc_vort.022"
-savepath = os.path.join(os.getcwd(), "trajectories_" + str(num_particles) + "p_30s_0.01dt_0.1sdt_initunif_mot_MPIprofile")
+filenames = "/media/alexander/AKC Passport 2TB/Maarten/sim021_b/F*n.nc.021"
+#filenames = "/rds/general/user/akc17/home/WORK/sim022_vort/F*n.nc_vort.022"
+savepath = "/home/alexander/Desktop/temp_results/MPI_trials/trajectories_" + str(num_particles) + "p_dead_MPIprofile"
+# savepath = os.path.join(os.getcwd(), "trajectories_" + str(num_particles) + "p_30s_0.01dt_0.1sdt_initunif_dead_MPIprofile")
 
-scale_fact = 1200 #5120./3
-runtime = timedelta(seconds=10) #30
+scale_fact = 5120./3  #1200
+runtime = timedelta(seconds=1) #30
 dt = timedelta(seconds=0.01)
 outputdt = timedelta(seconds=0.1)
 B = 2
-
 
 # Set up parcels objects.
 timestamps = extract_timestamps(filenames)
@@ -47,7 +51,16 @@ for v in variables:
 timer.args.stop()
 timer.fieldset = timer.Timer('FieldSet', parent=timer.init)
 
-chunksize = [50, 100, 500, 1000, 2000, 'auto'][int(sys.argv[1])-1]
+# chunksize = [50, 100, 500, 1000, 2000, 'auto'][int(sys.argv[1])-1]
+chunksize = '1000'
+
+# Initiate memory monitoring
+ncores = comm.Get_size()
+rank = comm.Get_rank()
+pid = os.getpid()
+memlog_savepath = "/home/alexander/Desktop/temp_results/MPI_trials/memuseage_%dp_%dchunksize_%d.%dprocs.npy" % (num_particles, chunksize, ncores, rank)
+subprocess.Popen("python3.5 /home/alexander/Documents/turbulence-patchiness-sims/simulations/util/memory_monitor.py %s %s" % (pid, memlog_savepath), shell=True)
+
 fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps, interp_method=interp_method, field_chunksize=chunksize)
 
 # Implement field scaling.
@@ -66,10 +79,11 @@ fieldset.add_periodic_halo(zonal=True, meridional=True, halosize=10)
 timer.fieldset.stop()
 timer.psetargs = timer.Timer('ParticleSetArgs', parent=timer.init)
 # Generate initial particle density field
-pfield_grid = RectilinearZGrid(lon=np.arange(0, 720), lat=np.arange(0, 720), depth=np.arange(0, 360), time=np.zeros(1), mesh='flat')
+pfield_grid_021 = RectilinearZGrid(lon=np.arange(0, 256), lat=np.arange(0, 256), depth=np.arange(0, 512), time=np.zeros(1), mesh='flat')
+# pfield_grid = RectilinearZGrid(lon=np.arange(0, 720), lat=np.arange(0, 720), depth=np.arange(0, 360), time=np.zeros(1), mesh='flat')
 
-pfield_uniform = uniform_init_field(pfield_grid)
-pfield_conc = conc_init_field(pfield_grid)
+pfield_uniform = uniform_init_field(pfield_grid_021)
+# pfield_conc = conc_init_field(pfield_grid)
 
 # Initiate particleset & kernels
 pclass = Akashiwo3D if motile else Generic3D
@@ -112,7 +126,6 @@ pset.execute(kernels,
              recovery={ErrorCode.ErrorOutOfBounds: TopBottomBoundary},
              output_file=pset.ParticleFile(name=savepath, outputdt=outputdt)
              )
-
 timer.psetrun.stop()
 print("\nFinished with %d particles left at endtime." % pset.size)
 

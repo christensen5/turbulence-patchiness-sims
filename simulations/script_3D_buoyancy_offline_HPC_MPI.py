@@ -52,13 +52,13 @@ timer.args.stop()
 timer.fieldset = timer.Timer('FieldSet', parent=timer.init)
 
 # chunksize = [50, 100, 500, 1000, 2000, 'auto'][int(sys.argv[1])-1]
-chunksize = '1000'
+chunksize = 3000
 
 # Initiate memory monitoring
 ncores = comm.Get_size()
 rank = comm.Get_rank()
 pid = os.getpid()
-memlog_savepath = "/home/alexander/Desktop/temp_results/MPI_trials/memuseage_%dp_%dchunksize_%d.%dprocs.npy" % (num_particles, chunksize, ncores, rank)
+memlog_savepath = "/home/alexander/Desktop/temp_results/MPI_trials/memuseage_%dp_%schunksize_%d.%dprocs.npy" % (num_particles, str(chunksize), ncores, rank)
 subprocess.Popen("python3.5 /home/alexander/Documents/turbulence-patchiness-sims/simulations/util/memory_monitor.py %s %s" % (pid, memlog_savepath), shell=True)
 
 fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps, interp_method=interp_method, field_chunksize=chunksize)

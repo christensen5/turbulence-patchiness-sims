@@ -19,9 +19,9 @@ timer.args = timer.Timer('Args', parent=timer.init)
 num_particles = 100000
 motile = False
 
-filenames = "/media/alexander/AKC Passport 2TB/Maarten/sim021_b/F*n.nc.021"
+filenames = "/media/alexander/AKC Passport 2TB/Maarten/sim021_b/F0000*n.nc.021"
 #filenames = "/rds/general/user/akc17/home/WORK/sim022_vort/F*n.nc_vort.022"
-savepath = "/home/alexander/Desktop/temp_results/MPI_trials/trajectories_" + str(num_particles) + "p_dead_MPIprofile"
+savepath = "/home/alexander/Desktop/temp_results/MPI_trials/trajectories_" + str(num_particles) + "p_dead_writeonceProfile"
 # savepath = os.path.join(os.getcwd(), "trajectories_" + str(num_particles) + "p_30s_0.01dt_0.1sdt_initunif_dead_MPIprofile")
 
 scale_fact = 5120./3  #1200
@@ -52,13 +52,13 @@ timer.args.stop()
 timer.fieldset = timer.Timer('FieldSet', parent=timer.init)
 
 # chunksize = [50, 100, 500, 1000, 2000, 'auto'][int(sys.argv[1])-1]
-chunksize = 3000
+chunksize = [None]
 
 # Initiate memory monitoring
 ncores = comm.Get_size()
 rank = comm.Get_rank()
 pid = os.getpid()
-memlog_savepath = "/home/alexander/Desktop/temp_results/MPI_trials/memuseage_%dp_%schunksize_%d.%dprocs.npy" % (num_particles, str(chunksize), ncores, rank)
+memlog_savepath = "/home/alexander/Desktop/temp_results/writeonce/memuseage_%dp_%schunksize_%d.%dprocs.npy" % (num_particles, str(chunksize[0]), ncores, rank)
 subprocess.Popen("python3.5 /home/alexander/Documents/turbulence-patchiness-sims/simulations/util/memory_monitor.py %s %s" % (pid, memlog_savepath), shell=True)
 
 fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps, interp_method=interp_method, field_chunksize=chunksize)
@@ -135,4 +135,9 @@ print("\nFinished with %d particles left at endtime." % pset.size)
 print("\nDone.\n")
 
 timer.root.stop()
+
+# timelog_savepath = "/home/alexander/Desktop/temp_results/writeonce/timer_%dp_%schunksize_%d.%dprocs.txt" % (num_particles, str(chunksize), ncores, rank)
+timelog_savepath = "/home/alexander/Desktop/temp_results/writeonce/timer_writeall.txt"
+# with open(timelog_savepath, 'w') as sys.stdout:
+#     timer.root.print_tree()
 timer.root.print_tree()

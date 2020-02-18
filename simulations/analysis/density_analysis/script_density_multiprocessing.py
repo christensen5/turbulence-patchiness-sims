@@ -4,12 +4,13 @@ from mayavi import mlab
 import multiprocessing
 from tqdm import tqdm
 import os
+import sys
 
 def calc_kde(data):
     return kde(data.T)
 
 timestamps = np.linspace(0, 300, 31, dtype=int).tolist()
-filepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_30s_0.01dt_0.1sdt_initunif_mot_tloop_JOINED"
+filepath = sys.argv[1] #"/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_30s_0.01dt_0.1sdt_initunif_mot_tloop_JOINED"
 
 # verify timestamp format
 if isinstance(timestamps, int) or isinstance(timestamps, float):
@@ -44,7 +45,7 @@ with tqdm(total=N) as pbar:
         coords = np.vstack([item.ravel() for item in [xi, yi, zi]])
 
         # Multiprocessing
-        cores = 4
+        cores = 2
         pool = multiprocessing.Pool(processes=cores)
         results = pool.map(calc_kde, np.array_split(coords.T, 2))
         density[:, :, :, t] = np.concatenate(results).reshape(xi.shape)

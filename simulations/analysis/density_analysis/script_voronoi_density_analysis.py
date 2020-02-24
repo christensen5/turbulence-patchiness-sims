@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 filepath_dead = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/dead/100000p_30s_0.01dt_0.05sdt_initunif_dead"
-filepath_mot = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim"
+filepath_mot = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/vswim_expt/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_0.1vswim/sim2"
 
 deps_dead = np.load(os.path.join(filepath_dead, 'deps.npy'))
 deps_mot = np.load(os.path.join(filepath_mot, 'deps.npy'))
@@ -21,7 +21,7 @@ voronoi_volumes_mot = np.load(os.path.join(filepath_mot, 'vols.npy'))
 concentrations_dead = np.reciprocal(voronoi_volumes_dead)
 concentrations_mot = np.reciprocal(voronoi_volumes_mot)
 
-timestamps = np.arange(0, 25, 1)#, 30]
+timestamps = np.arange(0, 31, 1)#, 30]
 
 Q = []
 

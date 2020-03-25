@@ -75,11 +75,11 @@ def GyrotaxisEE_3D_withTemp(particle, fieldset, time):
 
     # Re-align the particle
     if not particle.B == 0.0:
-        di = 0.5 * ((1 / particle.B * particle.dir_x * particle.dir_z) + (vort_y * particle.dir_z) - (
+        di = 0.5 * ((-1 / particle.B * particle.dir_x * particle.dir_z) + (vort_y * particle.dir_z) - (
                 vort_z * particle.dir_y))
-        dj = 0.5 * ((1 / particle.B * particle.dir_y * particle.dir_z) + (vort_z * particle.dir_x) - (
+        dj = 0.5 * ((-1 / particle.B * particle.dir_y * particle.dir_z) + (vort_z * particle.dir_x) - (
                 vort_x * particle.dir_z))
-        dk = 0.5 * ((1 / particle.B * (-1 + particle.dir_z * particle.dir_z)) + (vort_x * particle.dir_y) - (
+        dk = 0.5 * ((1 / particle.B * (1 - particle.dir_z * particle.dir_z)) + (vort_x * particle.dir_y) - (
                 vort_y * particle.dir_x))
     else:
         di = 0.5 * ((vort_y * particle.dir_z) - (vort_z * particle.dir_y))
@@ -130,9 +130,9 @@ def GyrotaxisRK4_3D_withTemp(particle, fieldset, time):
     #                                    fieldset.vort_Y[time, dep1, lat1, lon1],
     #                                    fieldset.vort_Z[time, dep1, lat1, lon1])
     if not particle.B == 0.0:
-        di = 0.5 * (((1/particle.B) * (dir_x1*dir_z1)) + (vort_y1*dir_z1) - (vort_z1*dir_y1))
-        dj = 0.5 * (((1/particle.B) * (dir_y1*dir_z1)) + (vort_z1*dir_x1) - (vort_x1*dir_z1))
-        dk = 0.5 * (((1/particle.B) * (-1 + dir_z1*dir_z1)) + (vort_x1*dir_y1) - (vort_y1*dir_x1))
+        di = 0.5 * (((-1/particle.B) * (dir_x1*dir_z1)) + (vort_y1*dir_z1) - (vort_z1*dir_y1))
+        dj = 0.5 * (((-1/particle.B) * (dir_y1*dir_z1)) + (vort_z1*dir_x1) - (vort_x1*dir_z1))
+        dk = 0.5 * (((1/particle.B) * (1 - dir_z1*dir_z1)) + (vort_x1*dir_y1) - (vort_y1*dir_x1))
     else:
         di = 0.5 * ((vort_y1 * dir_z1) - (vort_z1 * dir_y1))
         dj = 0.5 * ((vort_z1 * dir_x1) - (vort_x1 * dir_z1))
@@ -161,9 +161,9 @@ def GyrotaxisRK4_3D_withTemp(particle, fieldset, time):
     # d_ijk remain the same for k_234 under Euler scheme for computing p(t_n+1,x_n+1). So don't
     # recompute unless we switch to "midpoint" scheme (in which case change below to dir_x2, vort_x2 etc...).
     # if not particle.B == 0.0:
-    #     di = 0.5 * (((1/particle.B) * (dir_x1*dir_z1)) + (vort_y1*dir_z1) - (vort_z1*dir_y1))
-    #     dj = 0.5 * (((1/particle.B) * (dir_y1*dir_z1)) + (vort_z1*dir_x1) - (vort_x1*dir_z1))
-    #     dk = 0.5 * (((1/particle.B) * (-1 + dir_z1*dir_z1)) + (vort_x1*dir_y1) - (vort_y1*dir_x1))
+    #     di = 0.5 * (((-1/particle.B) * (dir_x1*dir_z1)) + (vort_y1*dir_z1) - (vort_z1*dir_y1))
+    #     dj = 0.5 * (((-1/particle.B) * (dir_y1*dir_z1)) + (vort_z1*dir_x1) - (vort_x1*dir_z1))
+    #     dk = 0.5 * (((1/particle.B) * (1 - dir_z1*dir_z1)) + (vort_x1*dir_y1) - (vort_y1*dir_x1))
     # else:
     #     di = 0.5 * ((vort_y1*dir_z1) - (vort_z1*dir_y1))
     #     dj = 0.5 * ((vort_z1*dir_x1) - (vort_x1*dir_z1))
@@ -192,9 +192,9 @@ def GyrotaxisRK4_3D_withTemp(particle, fieldset, time):
     # d_ijk remain the same for k_234 under Euler scheme for computing p(t_n+1,x_n+1). So don't
     # recompute unless we switch to "midpoint" scheme (in which case change below to dir_x3, vort_i3 etc...).
     # if not particle.B == 0.0:
-    #     di = 0.5 * (((1/particle.B) * (dir_x1*dir_z1)) + (vort_y1*dir_z1) - (vort_z1*dir_y1))
-    #     dj = 0.5 * (((1/particle.B) * (dir_y1*dir_z1)) + (vort_z1*dir_x1) - (vort_x1*dir_z1))
-    #     dk = 0.5 * (((1/particle.B) * (-1 + dir_z1*dir_z1)) + (vort_x1*dir_y1) - (vort_y1*dir_x1))
+    #     di = 0.5 * (((-1/particle.B) * (dir_x1*dir_z1)) + (vort_y1*dir_z1) - (vort_z1*dir_y1))
+    #     dj = 0.5 * (((-1/particle.B) * (dir_y1*dir_z1)) + (vort_z1*dir_x1) - (vort_x1*dir_z1))
+    #     dk = 0.5 * (((1/particle.B) * (1 - dir_z1*dir_z1)) + (vort_x1*dir_y1) - (vort_y1*dir_x1))
     # else:
     #     di = 0.5 * ((vort_y1*dir_z1) - (vort_z1*dir_y1))
     #     dj = 0.5 * ((vort_z1*dir_x1) - (vort_x1*dir_z1))

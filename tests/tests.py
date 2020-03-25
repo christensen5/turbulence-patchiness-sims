@@ -18,7 +18,7 @@ class OfflineTPSTestCase(unittest.TestCase):
         self.lat = np.linspace(0, 10, 11, dtype=np.float32)
         self.depth = np.linspace(0, 10, 11, dtype=np.float32)
         self.grid = RectilinearZGrid(lon=self.lon, lat=self.lat, depth=self.depth, time=np.zeros(1), mesh='flat')
-        self.k = (0., 0., -1.)
+        self.k = (0., 0., 1.)
 
     def test_kernel_top_bottom_boundary(self):
         """Test that the custom TopBottomBoundary kernel is correctly dealing with particles at the boundaries of the
@@ -196,7 +196,7 @@ class OfflineTPSTestCase(unittest.TestCase):
             p.check_x, p.check_y, p.check_z = (p.lon, p.lat, p.depth)
             p.check_dir_x, p.check_dir_y, p.check_dir_z = (p.dir_x, p.dir_y, p.dir_z)
 
-        for steps in range(50):
+        for steps in range(10):
             self.particleset.execute(self.kernel, runtime=self.runtime, dt=self.dt,
                                      recovery={ErrorCode.ErrorOutOfBounds: DeleteParticle})
             for p in self.particleset:
@@ -224,22 +224,22 @@ class OfflineTPSTestCase(unittest.TestCase):
                 p.check_x, p.check_y, p.check_z = (p.lon, p.lat, p.depth)
                 p.check_dir_x, p.check_dir_y, p.check_dir_z = (p.dir_x, p.dir_y, p.dir_z)
 
-        # #Plot particle trajectories (for diagnosing issues).
-        # fig = plt.figure()
-        # ax = plt.axes(projection='3d')
-        # ax.set_title("3D Particle Trajectories")
-        # ax.set_xlabel("X - Longitude")
-        # ax.set_ylabel("Y - Latitude")
-        # ax.set_zlabel("Z - Depth")
-        # colors = ['r', 'r', 'y', 'y', 'g', 'g', 'b', 'b', 'k', 'k']
-        # m = 1
-        # for p in self.particleset:
-        #     plot = ax.plot(p.x, p.y, p.z, 'o-', linewidth=1, markersize=2, color=colors[p.id % 10])
-        #     ax.quiver(p.x[::m], p.y[::m], p.z[::m],
-        #               p.dx[::m], p.dy[::m], p.dz[::m],
-        #               length=0.1, color='k')  # facing
-        # plt.show()
-        # plt.close()
+        #Plot particle trajectories (for diagnosing issues).
+        fig = plt.figure()
+        ax = plt.axes(projection='3d')
+        ax.set_title("3D Particle Trajectories")
+        ax.set_xlabel("X - Longitude")
+        ax.set_ylabel("Y - Latitude")
+        ax.set_zlabel("Z - Depth")
+        colors = ['r', 'r', 'y', 'y', 'g', 'g', 'b', 'b', 'k', 'k']
+        m = 1
+        for p in self.particleset:
+            plot = ax.plot(p.x, p.y, p.z, 'o-', linewidth=1, markersize=2, color=colors[p.id % 10])
+            ax.quiver(p.x[::m], p.y[::m], p.z[::m],
+                      p.dx[::m], p.dy[::m], p.dz[::m],
+                      length=0.1, color='k')  # facing
+        plt.show()
+        plt.close()
 
     def test_kernel_Gyr_EE_3D_tumble_rot(self):
         """Test that the the Gyrotactic tumble portion of the particlespot 3D EE Gyrotaxis kernel is doing what it's
@@ -568,22 +568,22 @@ class OfflineTPSTestCase(unittest.TestCase):
                 p.dy.append(p.dir_y)
                 p.dz.append(p.dir_z)
 
-        # # Plot particle trajectories (for diagnosing issues).
-        # fig = plt.figure()
-        # ax = plt.axes(projection='3d')
-        # ax.set_title("3D Particle Trajectories")
-        # ax.set_xlabel("X - Longitude")
-        # ax.set_ylabel("Y - Latitude")
-        # ax.set_zlabel("Z - Depth")
-        # colors = ['r', 'r', 'y', 'y', 'g', 'g', 'b', 'b', 'k', 'k']
-        # m = 10
-        # for p in self.particleset_down:
-        #     plot = ax.plot(p.x, p.y, p.z, 'o-', linewidth=1, markersize=2, color=colors[p.id % 10])
-        #     ax.quiver(p.x[::m], p.y[::m], p.z[::m],
-        #               p.dx[::m], p.dy[::m], p.dz[::m],
-        #               length=0.5, color='k')
-        # plt.show()
-        # plt.close()
+        # Plot particle trajectories (for diagnosing issues).
+        fig = plt.figure()
+        ax = plt.axes(projection='3d')
+        ax.set_title("3D Particle Trajectories")
+        ax.set_xlabel("X - Longitude")
+        ax.set_ylabel("Y - Latitude")
+        ax.set_zlabel("Z - Depth")
+        colors = ['r', 'r', 'y', 'y', 'g', 'g', 'b', 'b', 'k', 'k']
+        m = 10
+        for p in self.particleset_down:
+            plot = ax.plot(p.x, p.y, p.z, 'o-', linewidth=1, markersize=2, color=colors[p.id % 10])
+            ax.quiver(p.x[::m], p.y[::m], p.z[::m],
+                      p.dx[::m], p.dy[::m], p.dz[::m],
+                      length=0.5, color='k')
+        plt.show()
+        plt.close()
 
     def test_kernel_Gyr_RK4_3D_tumble_rot(self):
         """Test that the the Gyrotactic tumble portion of the 3D RK4 Gyrotaxis kernel is doing what it's
@@ -808,15 +808,15 @@ class OfflineTPSTestCase(unittest.TestCase):
 def suite():
     suite = unittest.TestSuite()
     # Test utils and subroutines.
-    suite.addTest(OfflineTPSTestCase('test_kernel_top_bottom_boundary'))
-    suite.addTest(OfflineTPSTestCase('test_kernel_Gyr_EE_3D_advection'))
+    # suite.addTest(OfflineTPSTestCase('test_kernel_top_bottom_boundary'))
+    # suite.addTest(OfflineTPSTestCase('test_kernel_Gyr_EE_3D_advection'))
     suite.addTest(OfflineTPSTestCase('test_kernel_Gyr_EE_3D_reorientation'))
-    suite.addTest((OfflineTPSTestCase('test_kernel_Gyr_EE_3D_tumble_rot')))
-    suite.addTest((OfflineTPSTestCase('test_kernel_Gyr_EE_3D_tumble_irrot')))
+    # suite.addTest((OfflineTPSTestCase('test_kernel_Gyr_EE_3D_tumble_rot')))
+    # suite.addTest((OfflineTPSTestCase('test_kernel_Gyr_EE_3D_tumble_irrot')))
 
     suite.addTest(OfflineTPSTestCase('test_kernel_Gyr_RK4_3D_reorientation'))
-    suite.addTest(OfflineTPSTestCase('test_kernel_Gyr_RK4_3D_tumble_rot'))
-    suite.addTest(OfflineTPSTestCase('test_kernel_Gyr_RK4_3D_tumble_irrot'))
+    # suite.addTest(OfflineTPSTestCase('test_kernel_Gyr_RK4_3D_tumble_rot'))
+    # suite.addTest(OfflineTPSTestCase('test_kernel_Gyr_RK4_3D_tumble_irrot'))
     return suite
 
 

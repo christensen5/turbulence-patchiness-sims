@@ -7,16 +7,16 @@ from datetime import timedelta
 # np.random.seed(1234)
 
 # Set simulation parameters
-os.chdir("/media/alexander/AKC Passport 2TB/Maarten/sim022/")
+os.chdir("/media/alexander/AKC Passport 2TB/")
 filenames = "F*n.nc_vort.022"
-savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim.nc.2"
+savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim123/initunif/dead/100000p_60s_0.01dt_0.1sdt_initunif_dead/trajectories_100000p_60s_0.01dt_0.1sdt_initunif_dead.nc"
 scale_fact = 1200 #5120./3
 num_particles = 100000
-runtime = timedelta(seconds=30.0)
+runtime = timedelta(seconds=60.0)
 dt = timedelta(seconds=0.01)
 outputdt = timedelta(seconds=0.1)
-B = 2.0
-motile = True
+B = 1.0
+motile = False
 verbose = False
 time_periodic = False  # WARNING!!! DOESNT SEEM TO WORK WHEN TRUE
 
@@ -74,7 +74,7 @@ pset = ParticleSet.from_field(fieldset=fieldset,
 
 # Initialise custom particle variables.
 if motile:
-    swim_init = scale_fact * swim_speed_dist(pset.size, dist='/home/alexander/Documents/turbulence-patchiness-sims/simulations/util/swim_speed_distribution.csv')
+    swim_init = scale_fact * 1e-5  # scale factor * swim speed in metres
 for particle in pset:
     particle.diameter = scale_fact * np.random.uniform(0.000018, 0.000032)
     if motile:

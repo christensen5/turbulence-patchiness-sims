@@ -166,7 +166,11 @@ def extract_vorticities_c_grid(filepaths):
 
         nc = netCDF4.Dataset(fp)
 
-        nc_new = netCDF4.Dataset(fp[:-4] + "_vort.022", "w", format="NETCDF4")
+        NxSize = nc.dimensions['Nx'].size
+        NySize = nc.dimensions['Ny'].size
+        NzSize = nc.dimensions['Nz'].size
+
+        nc_new = netCDF4.Dataset(fp[:-4] + "_vort." + fp[-3:], "w", format="NETCDF4")
         nc_new.createDimension('Nz', nc.dimensions['Nz'].size)
         nc_new.createDimension('Ny', nc.dimensions['Ny'].size)
         nc_new.createDimension('Nx', nc.dimensions['Nx'].size)
@@ -175,6 +179,7 @@ def extract_vorticities_c_grid(filepaths):
         nc_new.createVariable('w', nc.variables["w"].dtype, ('Nz', 'Ny', 'Nx'))
         nc_new.createVariable('t01', nc.variables["t01"].dtype, ('Nz', 'Ny', 'Nx'))
         nc_new.createVariable('time', nc.variables["time"].dtype, ())
+        nc_new.createVariable('p', nc.variables["p"].dtype, ('Nz', 'Ny', 'Nx'))
         nc_new.createVariable('vort_x', np.float32, ('Nz', 'Ny', 'Nx'))
         nc_new.createVariable('vort_y', np.float32, ('Nz', 'Ny', 'Nx'))
         nc_new.createVariable('vort_z', np.float32, ('Nz', 'Ny', 'Nx'))
@@ -186,6 +191,7 @@ def extract_vorticities_c_grid(filepaths):
         w = nc.variables["w"][:]
         time = nc.variables["time"][:]
         t01 = nc.variables["t01"][:]
+        p = nc.variables["p"][:]
 
         xb = nc.variables['xb'][:]  # in metres
         yb = nc.variables['yb'][:]
@@ -216,9 +222,17 @@ def extract_vorticities_c_grid(filepaths):
         wf = (1 - zeta) * W0 + zeta * W1
 
         # Return to original shape (we lose one slice in the interpolation between e.g. U_i and U_i+1)
-        uf = np.concatenate((uf, np.reshape(uf[:, :, -1], (362, 722, 1))), 2)
-        vf = np.concatenate((vf, np.reshape(vf[:, -1, :], (362, 1, 722))), 1)
-        wf = np.concatenate((wf, np.reshape(wf[-1, :, :], (1, 722, 722))), 0)
+        uf = np.concatenate((uf, np.reshape(uf[:, :, -1], (NzSize,
+                                                           NySize,
+                                                           1))), 2)
+
+        vf = np.concatenate((vf, np.reshape(vf[:, -1, :], (NzSize,
+                                                           1,
+                                                           NxSize))), 1)
+
+        wf = np.concatenate((wf, np.reshape(wf[-1, :, :], (1,
+                                                           NySize,
+                                                           NxSize))), 0)
 
         # Convert back to m/s from cells/s
         uf = uf / scale_fact
@@ -238,7 +252,8 @@ def extract_vorticities_c_grid(filepaths):
         nc_new.variables['v'][:] = v
         nc_new.variables['w'][:] = w
         nc_new.variables['time'][:] = time
-        nc_new.variables['t01'][:] = t01,
+        nc_new.variables['t01'][:] = t01
+        nc_new.variables["p"][:] = p
         nc_new.variables['vort_x'][:] = vort_x
         nc_new.variables['vort_y'][:] = vort_y
         nc_new.variables['vort_z'][:] = vort_z
@@ -356,9 +371,13 @@ def join_resumed_sims(filepaths, savepath):
 
 
 if __name__ == "__main__":
-    input1 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_15s_0.01dt_0.1sdt_initunif_mot_tloop.nc"
-    input2 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_15s_0.01dt_0.1sdt_initunif_mot_tloop_RESUME.nc"
-    output = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_30s_0.01dt_0.1sdt_initunif_mot_tloop_JOINED.nc"
 
-    join_resumed_sims([input1, input2], output)
+    nc = "/media/alexander/AKC Passport 2TB/F000090s.nc.123"
+    extract_vorticities_c_grid(nc)
+
+    # input1 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_15s_0.01dt_0.1sdt_initunif_mot_tloop.nc"
+    # input2 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_15s_0.01dt_0.1sdt_initunif_mot_tloop_RESUME.nc"
+    # output = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_30s_0.01dt_0.1sdt_initunif_mot_tloop_JOINED.nc"
+    #
+    # join_resumed_sims([input1, input2], output)
 

@@ -17,10 +17,10 @@ def TopBottomBoundary(particle, fieldset, time, margin=1):  # delete particles w
         warnings.warn("Particle %d diameter not specified. TopBottomBoundary margin reverting to default!" % particle.id)
         particle.diameter = margin
 
-    if particle.depth < particle.diameter/2.:
-        particle.depth = particle.diameter/2.
+    if particle.depth > fieldset.U.grid.depth[-1] - particle.diameter/2.:
+        particle.depth = fieldset.U.grid.depth[-1] - particle.diameter/2.
         print("Particle %d breached surface at (%f, %f, %f), t=%f  and was resubmerged." % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
-    elif particle.depth > fieldset.U.grid.depth[-1]:
+    elif particle.depth < fieldset.U.grid.depth[0]:
         print("Out-of-depth particle %d deleted at (%f, %f, %f), t=%f." % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
         particle.delete()
     else:

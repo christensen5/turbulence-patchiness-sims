@@ -10,7 +10,7 @@ from parcels import Field
 
 
 __all__ = ['rand_unit_vect_3D', 'extract_timestamps', 'find_max_velocities', 'extract_vorticities_c_grid',
-           'uniform_init_field', 'conc_init_field', 'swim_speed_dist', 'join_resumed_sims']
+           'uniform_init_field', 'conc_init_field', 'swim_speed_dist', 'join_resumed_sims', 'checkclose_0_30_60']
 
 
 def rand_unit_vect_3D():
@@ -166,7 +166,11 @@ def extract_vorticities_c_grid(filepaths):
 
         nc = netCDF4.Dataset(fp)
 
-        nc_new = netCDF4.Dataset(fp[:-4] + "_vort.022", "w", format="NETCDF4")
+        NxSize = nc.dimensions['Nx'].size
+        NySize = nc.dimensions['Ny'].size
+        NzSize = nc.dimensions['Nz'].size
+
+        nc_new = netCDF4.Dataset(fp[:-4] + "_vort." + fp[-3:], "w", format="NETCDF4")
         nc_new.createDimension('Nz', nc.dimensions['Nz'].size)
         nc_new.createDimension('Ny', nc.dimensions['Ny'].size)
         nc_new.createDimension('Nx', nc.dimensions['Nx'].size)
@@ -175,6 +179,7 @@ def extract_vorticities_c_grid(filepaths):
         nc_new.createVariable('w', nc.variables["w"].dtype, ('Nz', 'Ny', 'Nx'))
         nc_new.createVariable('t01', nc.variables["t01"].dtype, ('Nz', 'Ny', 'Nx'))
         nc_new.createVariable('time', nc.variables["time"].dtype, ())
+        nc_new.createVariable('p', nc.variables["p"].dtype, ('Nz', 'Ny', 'Nx'))
         nc_new.createVariable('vort_x', np.float32, ('Nz', 'Ny', 'Nx'))
         nc_new.createVariable('vort_y', np.float32, ('Nz', 'Ny', 'Nx'))
         nc_new.createVariable('vort_z', np.float32, ('Nz', 'Ny', 'Nx'))
@@ -186,6 +191,7 @@ def extract_vorticities_c_grid(filepaths):
         w = nc.variables["w"][:]
         time = nc.variables["time"][:]
         t01 = nc.variables["t01"][:]
+        p = nc.variables["p"][:]
 
         xb = nc.variables['xb'][:]  # in metres
         yb = nc.variables['yb'][:]
@@ -216,9 +222,17 @@ def extract_vorticities_c_grid(filepaths):
         wf = (1 - zeta) * W0 + zeta * W1
 
         # Return to original shape (we lose one slice in the interpolation between e.g. U_i and U_i+1)
-        uf = np.concatenate((uf, np.reshape(uf[:, :, -1], (362, 722, 1))), 2)
-        vf = np.concatenate((vf, np.reshape(vf[:, -1, :], (362, 1, 722))), 1)
-        wf = np.concatenate((wf, np.reshape(wf[-1, :, :], (1, 722, 722))), 0)
+        uf = np.concatenate((uf, np.reshape(uf[:, :, -1], (NzSize,
+                                                           NySize,
+                                                           1))), 2)
+
+        vf = np.concatenate((vf, np.reshape(vf[:, -1, :], (NzSize,
+                                                           1,
+                                                           NxSize))), 1)
+
+        wf = np.concatenate((wf, np.reshape(wf[-1, :, :], (1,
+                                                           NySize,
+                                                           NxSize))), 0)
 
         # Convert back to m/s from cells/s
         uf = uf / scale_fact
@@ -238,7 +252,8 @@ def extract_vorticities_c_grid(filepaths):
         nc_new.variables['v'][:] = v
         nc_new.variables['w'][:] = w
         nc_new.variables['time'][:] = time
-        nc_new.variables['t01'][:] = t01,
+        nc_new.variables['t01'][:] = t01
+        nc_new.variables["p"][:] = p
         nc_new.variables['vort_x'][:] = vort_x
         nc_new.variables['vort_y'][:] = vort_y
         nc_new.variables['vort_z'][:] = vort_z
@@ -318,10 +333,10 @@ def join_resumed_sims(filepaths, savepath):
 
     # extract variable names from first simulation.
     nc_first = netCDF4.Dataset(paths[0])
-    variables_dict = {key: None for key in nc_first.variables.keys()}
+    variables_dict = {key: None for key in nc_first.variables.keys()}  # this dict of variables will later be used to create a new netCDF dataset with the combined data from all sims
 
     for var in list(variables_dict.keys()):
-        variables_dict[var] = nc_first.variables[var][:]
+        variables_dict[var] = nc_first.variables[var][:]  # first fill the dict with the data from the first sim
 
     for fp in tqdm(paths[1:]):
         if not os.path.exists(fp):
@@ -339,7 +354,7 @@ def join_resumed_sims(filepaths, savepath):
                 continue
             else:
                 #nc_new.variables[var][:] = np.concatenate((nc_new.variables[var][:], nc.variables[var][:]), axis=1)
-                variables_dict[var] = np.concatenate((variables_dict[var], nc.variables[var][:]), axis=1)
+                variables_dict[var] = np.concatenate((variables_dict[var], nc.variables[var][:][:, 1:]), axis=1)  # now append each later sim's data to the dict
         nc.close()
 
     nc_new = netCDF4.Dataset(savepath, "w", format="NETCDF4")
@@ -347,7 +362,7 @@ def join_resumed_sims(filepaths, savepath):
     nc_new.createDimension('traj', None)
     nc_new.set_auto_mask(False)
     for var in list(variables_dict.keys()):
-        nc_new.createVariable(var, nc_first.variables[var].dtype, nc_first.variables[var].dimensions)
+        nc_new.createVariable(var, nc_first.variables[var].dtype, nc_first.variables[var].dimensions, fill_value=nc_first.variables[var]._FillValue)
         nc_new.variables[var][:] = variables_dict[var]
 
     nc_first.close()
@@ -355,10 +370,63 @@ def join_resumed_sims(filepaths, savepath):
     nc_new.close()
 
 
-if __name__ == "__main__":
-    input1 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_15s_0.01dt_0.1sdt_initunif_mot_tloop.nc"
-    input2 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_15s_0.01dt_0.1sdt_initunif_mot_tloop_RESUME.nc"
-    output = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_30s_0.01dt_0.1sdt_initunif_mot_tloop_JOINED.nc"
+def checkclose_0_30_60(sim030, sim060, sim3060, motile=False):
+    """A function to ensure that two simulations (0-30s & 30-60s) joined by join_resumed_sims() have indeed been
+    correctly joined together.
+    :param sim030: Path to .nc file containing the 0-30s simulation.
+    :param sim060: Path to .nc file containing the 0-60s simulation.
+    :param sim3060: Path to .nc file containing the 30-60s simulation.
 
-    join_resumed_sims([input1, input2], output)
+    :param motile: Boolean variable describing whether the simulations involve motile or non-motile particles.
+    """
+
+    # load sims.
+    nc030 = netCDF4.Dataset(sim030)
+    nc060 = netCDF4.Dataset(sim060)
+    nc3060 = netCDF4.Dataset(sim3060)
+
+    # define the simulation variables that will be checked.
+    keys = ['lon', 'lat', 'z', 'dir_x', 'dir_y', 'dir_z'] if motile else ['lon', 'lat', 'z']
+    for key in keys:
+        try:
+            assert (
+                np.ma.allclose(nc030.variables[key][:], nc060.variables[key][:][:, 0:nc030.variables[key][:].shape[1]]))
+        except AssertionError:
+            print("Error with variable %s in 0-30s." % key)
+        except KeyError:
+            print("KeyError: %s is not a variable in either sim030 or sim060 or both." % key)
+        else:
+            print("No error with variable %s in 0-30s." % key)
+        try:
+            assert (
+                np.ma.allclose(nc3060.variables[key][:], nc060.variables[key][:][:, -nc3060.variables[key][:].shape[1]:]))
+        except AssertionError:
+            print("Error with variable %s in 30-60s." % key)
+        except KeyError:
+            print("KeyError: %s is not a variable in either sim030 or sim3060 or both." % key)
+        else:
+            print("No error with variable %s in 30-60s." % key)
+
+    nc030.close()
+    nc060.close()
+    nc3060.close()
+
+
+if __name__ == "__main__":
+
+    # nc = "/media/alexander/AKC Passport 2TB/F000090s.nc.123"
+    # extract_vorticities_c_grid(nc)
+
+    # input1 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_15s_0.01dt_0.1sdt_initunif_mot_tloop.nc"
+    # input2 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_15s_0.01dt_0.1sdt_initunif_mot_tloop_RESUME.nc"
+    # output = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/10000p_30s_0.01dt_0.1sdt_initunif_mot_tloop_JOINED.nc"
+    #
+    # join_resumed_sims([input1, input2], output)
+
+    checkclose_0_30_60(
+        '/media/alexander/DATA/Ubuntu/Maarten/outputs/sim123/initunif/dead/100000p_0-60s_0.01dt_0.1sdt_initunif_dead/trajectories_100000p_0-45s_0.01dt_0.1sdt_initunif_dead.nc',
+        '/media/alexander/DATA/Ubuntu/Maarten/outputs/sim123/initunif/dead/100000p_0-60s_0.01dt_0.1sdt_initunif_dead/trajectories_100000p_0-60s_0.01dt_0.1sdt_initunif_dead.nc',
+        '/media/alexander/DATA/Ubuntu/Maarten/outputs/sim123/initunif/dead/100000p_0-60s_0.01dt_0.1sdt_initunif_dead/trajectories_100000p_30-60s_0.01dt_0.1sdt_initunif_dead.nc',
+        True)
+
 

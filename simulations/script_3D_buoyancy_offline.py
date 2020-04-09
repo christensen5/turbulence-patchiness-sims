@@ -7,9 +7,9 @@ from datetime import timedelta
 # np.random.seed(1234)
 
 # Set simulation parameters
-os.chdir("/media/alexander/AKC Passport 2TB/")
-filenames = "F*n.nc_vort.022"
-savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim123/initunif/dead/100000p_60s_0.01dt_0.1sdt_initunif_dead/trajectories_100000p_60s_0.01dt_0.1sdt_initunif_dead.nc"
+os.chdir("/media/alexander/AKC Passport 2TB/0-30/")
+filenames = "F*n.nc_vort.123"
+savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim123/initunif/dead/100000p_0-60s_0.01dt_0.1sdt_initunif_dead/trajectories_100000p_0-60s_0.01dt_0.1sdt_initunif_dead.nc2"
 scale_fact = 1200 #5120./3
 num_particles = 100000
 runtime = timedelta(seconds=60.0)
@@ -69,7 +69,7 @@ else:
 pset = ParticleSet.from_field(fieldset=fieldset,
                               pclass=pclass,
                               start_field=pfield_uniform,
-                              depth=np.random.rand(num_particles) * 180,
+                              depth=180 + (np.random.rand(num_particles) * 180),
                               size=num_particles)
 
 # Initialise custom particle variables.
@@ -82,7 +82,7 @@ for particle in pset:
         particle.dir_x = dir[0]
         particle.dir_y = dir[1]
         particle.dir_z = dir[2]
-        particle.v_swim = swim_init[particle.id]
+        particle.v_swim = swim_init
         particle.B = B
 
 if motile:

@@ -9,14 +9,14 @@ from datetime import timedelta
 # Set simulation parameters
 os.chdir("/media/alexander/AKC Passport 2TB/0-30/")
 filenames = "F*n.nc_vort.123"
-savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim123/initunif/dead/100000p_0-60s_0.01dt_0.1sdt_initunif_dead/trajectories_100000p_0-60s_0.01dt_0.1sdt_initunif_dead.nc2"
+savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_1000um_initunif_mot/trajectories_100000p_0-30s_0.01dt_0.1sdt_1.0B_1000um_initunif_mot2.nc"
 scale_fact = 1200 #5120./3
 num_particles = 100000
-runtime = timedelta(seconds=60.0)
+runtime = timedelta(seconds=30.0)
 dt = timedelta(seconds=0.01)
 outputdt = timedelta(seconds=0.1)
 B = 1.0
-motile = False
+motile = True
 verbose = False
 time_periodic = False  # WARNING!!! DOESNT SEEM TO WORK WHEN TRUE
 
@@ -38,7 +38,7 @@ for v in variables:
     else:
         interp_method[v] = 'cgrid_tracer'
 
-fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps, time_periodic=time_periodic, interp_method=interp_method)
+fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps, time_periodic=time_periodic, interp_method=interp_method, field_chunksize=False)
 
 # Implement field scaling.
 logger.warning_once("Scaling factor set to %f - ensure this is correct." %scale_fact)
@@ -74,7 +74,7 @@ pset = ParticleSet.from_field(fieldset=fieldset,
 
 # Initialise custom particle variables.
 if motile:
-    swim_init = scale_fact * 1e-5  # scale factor * swim speed in metres
+    swim_init = scale_fact * 1e-3  # scale factor * swim speed in metres
 for particle in pset:
     particle.diameter = scale_fact * np.random.uniform(0.000018, 0.000032)
     if motile:

@@ -12,14 +12,14 @@ def DeleteParticle(particle, fieldset, time):  # delete particles who run out of
     particle.delete()
 
 
-def TopBottomBoundary(particle, fieldset, time, margin=1):  # delete particles who run out of bounds.
+def TopBottomBoundary(particle, fieldset, time, margin=0):  # delete particles who run out of bounds.
     if particle.diameter is None or math.isnan(particle.diameter):
         warnings.warn("Particle %d diameter not specified. TopBottomBoundary margin reverting to default!" % particle.id)
         particle.diameter = margin
 
-    if particle.depth > fieldset.U.grid.depth[-1] - particle.diameter/2.:
-        particle.depth = fieldset.U.grid.depth[-1] - particle.diameter/2.
+    if particle.depth > fieldset.U.grid.depth[-1] - 1:# - particle.diameter/2.:
         print("Particle %d breached surface at (%f, %f, %f), t=%f  and was resubmerged." % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
+        particle.depth = fieldset.U.grid.depth[-1] - 1# - particle.diameter/2.
     elif particle.depth < fieldset.U.grid.depth[0]:
         print("Out-of-depth particle %d deleted at (%f, %f, %f), t=%f." % (particle.id, particle.lon, particle.lat, particle.depth, particle.time))
         particle.delete()

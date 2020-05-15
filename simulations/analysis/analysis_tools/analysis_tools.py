@@ -14,7 +14,7 @@ import sys
 # sys.path.append('/home/alexander/Documents/surface_mixing/Analysis/')
 # from ana_objects import ParticleData
 
-all = ['reformat_for_animate', 'reformat_for_voronoi', 'histogram_cell_velocities', 'plot_densities', 'plot_voro_concs', 'plot_polar_angles', 'plot_polar_angles_superimposed',
+all = ['reformat_for_animate', 'reformat_for_voronoi', 'extract_particlewise_epsilon', 'histogram_cell_velocities', 'plot_densities', 'plot_voro_concs', 'plot_polar_angles', 'plot_polar_angles_superimposed',
        'plot_trajectories', 'plot_particlewise_angles', 'plot_particlewise_velocities', 'plot_particlewise_vorticities']
 
 # Load matplotlib style file
@@ -26,9 +26,9 @@ def reformat_for_animate(filepath):
     A method to take the native parcels netcdf4 output file and reformat the particle position data to a matplotlib
     3D scatterplot-friendly format.
 
-    :param filepath: path to the netCDF file containing particle trajectories WITHOUT THE .NC
+    :param filepath: path to the netCDF file containing particle trajectories
     """
-    particlefile = netCDF4.Dataset(str(filepath + ".nc"))
+    particlefile = netCDF4.Dataset(str(filepath))
 
     num_frames = particlefile.variables["lon"].shape[1]
 
@@ -92,7 +92,103 @@ def reformat_for_voronoi(filedir, timesteps):
     for t in tqdm(timesteps):
         savepath = os.path.join(filedir, "vor/in/vor_mm_%03d.txt" % t)
         points = np.stack((np.arange(n), lons[t, :] * dx, lats[t, :] * dx, deps[t, :] * dx), axis=1)
-        np.savetxt(savepath, points, fmt=["%d", "%10.5f", "%10.5f", "%10.5f"])
+        np.savetxt(savepath, points, fmt=["%d", "%.12f", "%.12f", "%.12f"])
+
+
+def extract_particlewise_epsilon(filepath, epsilon_csv_file="/media/alexander/AKC Passport 2TB/epsilon.csv"):
+    """
+    A method to extract the epsilon value at each particle's position during its trajectory in a completed simulation,
+    given a .csv file containing the epsilon values at all depths and times.
+    :param filepath: String representing the path to the .nc file containing particle trajectories.
+    :param epsilon_csv_file: String representing the path to the .csv file containing epsilon values. The csv file
+    should consist of 4 columns (time, zb, zc, epsilon), and be sorted first according to increasing time, then
+    sub-sorted (i.e. within time-values) according to increasing zb.
+    Each row then represents the epsilon value at the depth range defined by 'zb' & 'zc' and at the time defined by
+    'time':
+        'time' represents the number of seconds since the start of the DNS simulation (INCLUDING SPIN-UP!!)
+        'zb' represents the z-coordinate of the 'bottom' of the depth range.
+        'zc' represents the z-coordinate of the centre of the depth range.
+        'epsilon' represents the value of the turbulent dissipation rate at the depth range and time specified.
+    :return:
+    """
+
+    # load epsilon values
+    print("REMINDER: Please ensure epsilon_csv_file is sorted first by increasing time, then subsorted by increasing zb")
+    epsilon_array = np.genfromtxt(epsilon_csv_file, delimiter=",")
+    time_offset = 30.0  # epsilon csv file includes DNS spin-up timesteps, which the Parcels simulation does not.
+    print("Time offset set to %.1f seconds. Ensure this is correct." % time_offset)
+    time_offset_index = np.searchsorted(epsilon_array[:, 0], time_offset)
+
+    epsilon_array = epsilon_array[time_offset_index:, :]  # remove rows corresponding to spin-up timesteps
+    epsilon_array[:, 0] -= time_offset  # align timestamps with the Parcels simulation.
+    epsilon_array[:, 3] = -epsilon_array[:, 3]  # make epsilon column positive
+    epsilon_timestamps = np.unique(epsilon_array[:, 0])  # extract timestamps at which we have epsilon data
+    dz = epsilon_array[1, 1] - epsilon_array[0, 1]
+
+    # load particle depths and timestamps
+    nc = netCDF4.Dataset(filepath)
+    depths = nc.variables['z'][:] * dz  # dz converts cells -> metres
+    particle_timestamps = nc.variables['time'][:]  # extract timestamps at which we have particle data
+    nc.close()
+
+    # match epsilon values to particle depths.
+    eps = np.zeros((depths.shape[0], epsilon_timestamps.size))
+    ti = 0
+    for t in tqdm(epsilon_timestamps):
+        epsilon_array_t = epsilon_array[np.isclose(t, epsilon_array[:, 0])]
+        depths_t = depths[np.isclose(t, particle_timestamps)]
+
+        indicies = np.searchsorted(epsilon_array_t[:, 1], depths_t) - 1
+        eps[:, ti] = epsilon_array_t[indicies, 3]
+        ti += 1
+    np.save(os.path.join(os.path.dirname(filepath), "eps.npy"), eps)
+
+
+def extract_voronoi_epsilon(filepath, epsilon_csv_file="/media/alexander/AKC Passport 2TB/epsilon.csv"):
+    """
+    A method to extract the epsilon value at each particle's position during its trajectory in a completed simulation,
+    given a .csv file containing the epsilon values at all depths and times.
+    :param filepath: String representing the path to the .npy file containing particle depths POST-VORONOI ANALYSIS.
+    :param epsilon_csv_file: String representing the path to the .csv file containing epsilon values. The csv file
+    should consist of 4 columns (time, zb, zc, epsilon), and be sorted first according to increasing time, then
+    sub-sorted (i.e. within time-values) according to increasing zb.
+    Each row then represents the epsilon value at the depth range defined by 'zb' & 'zc' and at the time defined by
+    'time':
+        'time' represents the number of seconds since the start of the DNS simulation (INCLUDING SPIN-UP!!)
+        'zb' represents the z-coordinate of the 'bottom' of the depth range.
+        'zc' represents the z-coordinate of the centre of the depth range.
+        'epsilon' represents the value of the turbulent dissipation rate at the depth range and time specified.
+    :return:
+    """
+
+    # load epsilon values
+    print("REMINDER: Please ensure epsilon_csv_file is sorted first by increasing time, then subsorted by increasing zb")
+    epsilon_array = np.genfromtxt(epsilon_csv_file, delimiter=",")
+    time_offset = 30.0  # epsilon csv file includes DNS spin-up timesteps, which the Parcels simulation does not.
+    print("Time offset set to %.1f seconds. Ensure this is correct." % time_offset)
+    time_offset_index = np.searchsorted(epsilon_array[:, 0], time_offset)
+
+    epsilon_array = epsilon_array[time_offset_index:, :]  # remove rows corresponding to spin-up timesteps
+    epsilon_array[:, 0] -= time_offset  # align timestamps with the Parcels simulation.
+    epsilon_array[:, 3] = -epsilon_array[:, 3]  # make epsilon column positive
+    epsilon_timestamps = np.unique(epsilon_array[:, 0])  # extract timestamps at which we have epsilon data
+
+    # load particle depths and timestamps
+    depths = np.load(filepath) * 0.001  # converts mm -> metres
+    particle_timestamps = np.arange(0, 61)
+
+    # match epsilon values to particle depths.
+    eps = np.zeros((depths.shape[0], epsilon_timestamps.size))
+    ti = 0
+    for t in tqdm(epsilon_timestamps):
+        epsilon_array_t = epsilon_array[np.isclose(t, epsilon_array[:, 0])]
+        depths_t = depths[:, ti]
+
+        indicies = np.searchsorted(epsilon_array_t[:, 1], depths_t) - 1
+        eps[:, ti] = epsilon_array_t[indicies, 3]
+        ti += 1
+    np.save(os.path.join(os.path.dirname(filepath), "eps_vor.npy"), eps)
+
 
 
 def histogram_cell_velocities(filepaths, n_bins, saveplot=None):
@@ -923,8 +1019,25 @@ if __name__ == "__main__":
     #
     # plot_polar_angles_superimposed(filepaths_B, colours_B, labels_B, "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/comparison/theta/mean_polar_timeseries_Bvar.png")
     # plot_polar_angles_superimposed(filepaths_V, colours_V, labels_V, "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/comparison/theta/mean_polar_timeseries_vswimvar.png")
-
-    plot_voro_concs(
-        '/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim',
-        './')
-
+    #
+    # plot_voro_concs(
+    #     '/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim',
+    #     './')
+    files = ["/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/dead/100000p_0-60s_0.01dt_0.1sdt_initunif_dead/trajectories_100000p_0-60s_0.01dt_0.1sdt_initunif_dead.nc",
+             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_10um_initunif_mot.nc",
+             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_100um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_100um_initunif_mot.nc",
+             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_500um_initunif_mot.nc",
+             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_1000um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_1000um_initunif_mot.nc",
+             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_10um_initunif_mot.nc",
+             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_100um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_100um_initunif_mot.nc",
+             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_500um_initunif_mot.nc",
+             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_1000um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_1000um_initunif_mot.nc",
+             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_10um_initunif_mot.nc",
+             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_100um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_100um_initunif_mot.nc",
+             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_500um_initunif_mot.nc",
+             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_1000um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_1000um_initunif_mot.nc"]
+    timesteps = list(np.arange(0, 601, 10))
+    for file in files:
+        # reformat_for_voronoi(os.path.dirname(file), timesteps)
+        extract_voronoi_epsilon(filepath=os.path.join(os.path.dirname(file), "vols_d.npy"),
+                                    epsilon_csv_file='/media/alexander/AKC Passport 2TB/epsilon.csv')

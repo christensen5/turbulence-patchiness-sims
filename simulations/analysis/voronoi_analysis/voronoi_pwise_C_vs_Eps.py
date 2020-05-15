@@ -120,17 +120,17 @@ nosurf = True
 surfstring = "_nosurf" if nosurf is True else ""
 
 # find max and min eps (for plot limits)
-xmin = data_dead["eps"].min()
-xmax = data_dead["eps"].max()
+ymin = data_dead["eps"].min()
+ymax = data_dead["eps"].max()
 for simdata_dict in all_motile_data:
     mineps = np.amin(simdata_dict["eps"])
     maxeps = np.amax(simdata_dict["eps"])
-    if mineps < xmin:
-        xmin = mineps
-    if maxeps > xmax:
-        xmax = maxeps
-xlims = [xmin, xmax]
-ylims = [-6, -1] if nosurf else [-6, 12]
+    if mineps < ymin:
+        ymin = mineps
+    if maxeps > ymax:
+        ymax = maxeps
+xlims = [-6, -1] if nosurf else [-6, 12]
+ylims = [ymin, ymax]
 
 f = 0.1
 timesteps_for_jointplots = [0, 12, 24, 36, 48, 60]
@@ -144,25 +144,25 @@ for simdata_dict in tqdm(all_motile_data):
         if nosurf:
             conc = conc[eps != 0]
             eps = eps[eps != 0]
-        plot = sns.jointplot(eps, np.log10(conc), xlim=xlims, ylim=ylims,
+        plot = sns.jointplot(np.log10(conc), eps, xlim=xlims, ylim=ylims,
                                     marginal_kws=dict(bins=100, norm_hist=True),
                                     s=0.5, alpha=0.05)
-        plot.ax_marg_y.axhline(y=np.median(np.log10(conc)))  # median conc of all particles
+        plot.ax_marg_x.axvline(x=np.median(np.log10(conc)))  # median conc of all particles
         patchmin = conc[conc.argsort()[-int(f * conc.size)]]  # index of lowest conc value in patches
         patchall = conc[conc.argsort()[-int(f * conc.size):]]  # indicies of all conc values in patches
-        plot.ax_marg_y.fill_betweenx(np.linspace(np.log10(patchmin), np.log10(conc.max()), 100), 0,
-                                     plot.ax_marg_y.get_ylim()[1],
+        plot.ax_marg_x.fill_between(np.linspace(np.log10(patchmin), np.log10(conc.max()), 100),
+                                    plot.ax_marg_x.get_ylim()[0], plot.ax_marg_x.get_ylim()[1],
                                      color="red", alpha=0.2)  # shade patches in red
-        plot.ax_marg_y.axhline(y=np.log10(np.median(patchall)), color="red",
+        plot.ax_marg_x.axvline(x=np.log10(np.median(patchall)), color="red",
                                linestyle="--")  # median conc of particles in patches
-        plt.text(-0.5, -5.8, str(t)+"s", fontsize=16, horizontalalignment='right', verticalalignment='center')#, transform=ax.transAxes)
+        plt.text(0.9*xlims[0], 1.1*ylims[1], str(t)+"s", fontsize=16, horizontalalignment='left', verticalalignment='top')
         splots.append(plot)
         if t == 0:
-            splots[-1].set_axis_labels("", "log(C_v)")
+            splots[-1].set_axis_labels("", "epsilon")
         elif t == 36:
-            splots[-1].set_axis_labels("epsilon", "log(C_v)")
+            splots[-1].set_axis_labels("log(C)", "epsilon")
         elif t > 36:
-            splots[-1].set_axis_labels("epsilon", "")
+            splots[-1].set_axis_labels("log(C)", "")
 
 
     fig = plt.figure(figsize=(15.2, 9))
@@ -190,25 +190,25 @@ for t in timesteps_for_jointplots:
     if nosurf:
         conc = conc[eps != 0]
         eps = eps[eps != 0]
-    plot = sns.jointplot(eps, np.log10(conc), xlim=xlims, ylim=ylims,
+    plot = sns.jointplot(np.log10(conc), eps, xlim=xlims, ylim=ylims,
                          marginal_kws=dict(bins=100, norm_hist=True),
                          s=0.5, alpha=0.05)
-    plot.ax_marg_y.axhline(y=np.median(np.log10(conc)))  # median conc of all particles
+    plot.ax_marg_x.axvline(x=np.median(np.log10(conc)))  # median conc of all particles
     patchmin = conc[conc.argsort()[-int(f * conc.size)]]  # index of lowest conc value in patches
     patchall = conc[conc.argsort()[-int(f * conc.size):]]  # indicies of all conc values in patches
-    plot.ax_marg_y.fill_betweenx(np.linspace(np.log10(patchmin), np.log10(conc.max()), 100), 0,
-                                 plot.ax_marg_y.get_ylim()[1],
+    plot.ax_marg_x.fill_between(np.linspace(np.log10(patchmin), np.log10(conc.max()), 100),
+                                plot.ax_marg_x.get_ylim()[0], plot.ax_marg_x.get_ylim()[1],
                                  color="red", alpha=0.2)  # shade patches in red
-    plot.ax_marg_y.axhline(y=np.log10(np.median(patchall)), color="red",
+    plot.ax_marg_x.axvline(x=np.log10(np.median(patchall)), color="red",
                            linestyle="--")  # median conc of particles in patches
-    plt.text(-0.5, -5.8, str(t)+"s", fontsize=16, horizontalalignment='right', verticalalignment='center')#, transform=ax.transAxes)
+    plt.text(0.9*xlims[0], 1.1*ylims[1], str(t)+"s", fontsize=16, horizontalalignment='left', verticalalignment='top')
     splots.append(plot)
     if t == 0:
-        splots[-1].set_axis_labels("", "log(C_v)")
+        splots[-1].set_axis_labels("", "epsilon")
     elif t == 36:
-        splots[-1].set_axis_labels("epsilon", "log(C_v)")
+        splots[-1].set_axis_labels("log(C)", "epsilon")
     elif t > 36:
-        splots[-1].set_axis_labels("epsilon", "")
+        splots[-1].set_axis_labels("log(C)", "")
 
 
 fig = plt.figure(figsize=(15.2, 9))

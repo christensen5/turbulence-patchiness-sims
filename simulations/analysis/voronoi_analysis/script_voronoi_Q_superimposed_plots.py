@@ -45,38 +45,6 @@ concentrations_v500_B1 = np.reciprocal(voronoi_v500_B1)
 concentrations_v500_B3 = np.reciprocal(voronoi_v500_B3)
 concentrations_v500_B5 = np.reciprocal(voronoi_v500_B5)
 
-f = 1.
-timestamps_for_dists = np.arange(0, 61, 12)
-fig_dists = plt.figure(figsize=(15, 9))
-plotindex = 231
-xlims = (np.log10(concentrations_v500_B1).min(), np.log10(concentrations_v500_B1).max())
-ylims = (1e0, 1e5)
-for t in timestamps_for_dists:
-    conc_dead = concentrations_dead[:, t].flatten()
-    conc_mot = np.log10(concentrations_v10_B5[:, t].flatten())
-    Cm_t = np.mean(np.log10(conc_dead))
-    ax = plt.subplot(plotindex)
-    hgram = ax.hist(conc_mot, 100, range=xlims, log=True)
-    plt.text(0.8, 0.9, str(t)+"s", fontsize=16, horizontalalignment='right', verticalalignment='center', transform=ax.transAxes)
-    ax.set_ylim(ylims)
-    ax.hlines(0, ax.get_xlim()[0], ax.get_xlim()[1], 'k')
-    ax.vlines(Cm_t, ylims[0], ylims[1], 'r')
-    if int(str(plotindex)[-1]) > 3:
-        ax.set_xlabel(r'log(Concentration)', fontsize=15)
-    if int(str(plotindex)[-1]) % 3 == 1:
-        ax.set_ylabel("Count", fontsize=15)
-    for tick in ax.xaxis.get_major_ticks():
-        tick.label.set_fontsize(13)
-    for tick in ax.yaxis.get_major_ticks():
-        tick.label.set_fontsize(13)
-    plt.box(False)
-    plotindex += 1
-fig_dists.suptitle(r'Distribution of logged patch concentrations over time $(f=%0.2f, B=5.0s^{-1}, v=10ums^{-1})$' % f, fontsize=18)
-fig_dists.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/C/5.0B_10v_Cdist_loglog_timesnaps.png")
-
-
-
-
 timestamps = np.arange(0, 61, 1)#, 30]
 
 Q = []
@@ -182,53 +150,5 @@ for tick in ax0.xaxis.get_major_ticks():
 for tick in ax0.yaxis.get_major_ticks():
         tick.label.set_fontsize(20)
 ax0.legend(fontsize=15)
-fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/100000p_%0.2ff_concs_over_time_mean.png" %f)
+fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/C/100000p_%0.2ff_concs_over_time_mean.png" %f)
 fig.close()
-
-# Q plotting
-fig = plt.figure(figsize=(15, 9))
-st = fig.suptitle("Q statistic over time (f=%0.2f)" % f, fontsize=25)
-
-colours = np.zeros((3, 3))
-colours[1, :] = np.linspace(0, 1, 3)
-
-plt.box(False)
-ax1 = plt.subplot(311)
-l1 = ax1.plot(timestamps, Q[:, 0], '-o', color=colours[:, 0], linewidth=2, markersize=3, label='B=1.0 v=10um')
-l2 = ax1.plot(timestamps, Q[:, 1], '-o', color=colours[:, 1], linewidth=2, markersize=3, label='B=3.0 v=10um')
-l3 = ax1.plot(timestamps, Q[:, 2], '-o', color=colours[:, 2], linewidth=2, markersize=3, label='B=5.0 v=10um')
-plt.hlines(0, ax1.get_xlim()[0], ax1.get_xlim()[1], 'k')
-ax1.set_xlabel("Time", fontsize=25)
-ax1.set_ylabel("Q", fontsize=25)
-for tick in ax1.xaxis.get_major_ticks():
-        tick.label.set_fontsize(20)
-for tick in ax1.yaxis.get_major_ticks():
-        tick.label.set_fontsize(20)
-ax1.legend(fontsize=15)
-ax2 = plt.subplot(312)
-l1 = ax2.plot(timestamps, Q[:, 3], '--o', color=colours[:, 0], linewidth=2, markersize=3, label='B=1.0 v=100um')
-l2 = ax2.plot(timestamps, Q[:, 4], '--o', color=colours[:, 1], linewidth=2, markersize=3, label='B=3.0 v=100um')
-l3 = ax2.plot(timestamps, Q[:, 5], '--o', color=colours[:, 2], linewidth=2, markersize=3, label='B=5.0 v=100um')
-plt.hlines(0, ax2.get_xlim()[0], ax2.get_xlim()[1], 'k')
-ax2.set_xlabel("Time", fontsize=25)
-ax2.set_ylabel("Q", fontsize=25)
-for tick in ax2.xaxis.get_major_ticks():
-        tick.label.set_fontsize(20)
-for tick in ax2.yaxis.get_major_ticks():
-        tick.label.set_fontsize(20)
-ax2.legend(fontsize=15)
-ax3 = plt.subplot(313)
-l1 = ax3.plot(timestamps, Q[:, 6], ':o', color=colours[:, 0], linewidth=2, markersize=3, label='B=1.0 v=500um')
-l2 = ax3.plot(timestamps, Q[:, 7], ':o', color=colours[:, 1], linewidth=2, markersize=3, label='B=3.0 v=500um')
-l3 = ax3.plot(timestamps, Q[:, 8], ':o', color=colours[:, 2], linewidth=2, markersize=3, label='B=5.0 v=500um')
-plt.hlines(0, ax3.get_xlim()[0], ax3.get_xlim()[1], 'k')
-ax3.set_xlabel("Time", fontsize=25)
-ax3.set_ylabel("Q", fontsize=25)
-for tick in ax3.xaxis.get_major_ticks():
-        tick.label.set_fontsize(20)
-for tick in ax3.yaxis.get_major_ticks():
-        tick.label.set_fontsize(20)
-ax3.legend(fontsize=15)
-
-# plt.show()
-fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/100000p_%0.2ff_Q_over_time_mean.png" %f)

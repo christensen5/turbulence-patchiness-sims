@@ -76,6 +76,14 @@ sns.set(font_scale=.8, rc={'figure.figsize':(15,15)})
 plot = sns.jointplot(epsilon_array[:, 3], epsilon_array[:, 1],
                          #marginal_kws=dict(bins=100, norm_hist=True),
                          s=0.5, alpha=0.1)
+# Draw boundaries between depth ranges (see voronoi_Qovertime_vs_Depth.py) and shade them.
+plot.ax_joint.axhline(y=0.1, color="k", ls=":", lw=1)
+plot.ax_joint.axhline(y=0.17, color="k", ls=":", lw=1)
+plot.ax_joint.axhline(y=0.24, color="k", ls=":", lw=1)
+plot.ax_joint.axhline(y=0.3, color="k", ls=":", lw=1)
+plot.ax_joint.fill_between(np.linspace(plot.ax_joint.get_xlim()[0], plot.ax_joint.get_xlim()[1], 100),
+                           0.1, plot.ax_joint.get_ylim()[1],
+                           color="k", alpha=0.2)
 plot.set_axis_labels("epsilon", "depth (m)")
 plt.subplots_adjust(top=0.9)
 plot.fig.suptitle(r'Fluid simulation depth vs turbulent dissipation rate.', fontsize=18)

@@ -850,7 +850,7 @@ def plot_particlewise_angles(sample, filepath, savepath=None):
     def cart2spher(v_x, v_y, v_z):
         import math
         r = np.sqrt(np.power(v_x, 2) + np.power(v_y, 2) + np.power(v_z, 2))
-        phi = math.pi - np.arctan2(np.sqrt(np.power(v_x, 2) + np.power(v_y, 2)), v_z)  # pi - ans because z is positive downwards
+        phi = np.arctan2(np.sqrt(np.power(v_x, 2) + np.power(v_y, 2)), v_z)
         theta = np.arctan2(v_y, v_x)
         return r, phi, theta
 

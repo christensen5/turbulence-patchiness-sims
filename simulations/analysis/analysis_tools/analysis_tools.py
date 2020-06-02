@@ -14,8 +14,11 @@ import sys
 # sys.path.append('/home/alexander/Documents/surface_mixing/Analysis/')
 # from ana_objects import ParticleData
 
-all = ['reformat_for_animate', 'reformat_for_voronoi', 'extract_particlewise_epsilon', 'histogram_cell_velocities', 'plot_densities', 'plot_voro_concs', 'plot_polar_angles', 'plot_polar_angles_superimposed',
-       'plot_trajectories', 'plot_particlewise_angles', 'plot_particlewise_velocities', 'plot_particlewise_vorticities']
+all = ['reformat_for_animate', 'reformat_for_voronoi', 'compute_vertical_distance_travelled',
+       'compute_particlewise_Veff', 'extract_particlewise_epsilon',
+       'histogram_cell_velocities', 'plot_densities', 'plot_voro_concs', 'plot_polar_angles',
+       'plot_polar_angles_superimposed', 'plot_trajectories', 'plot_particlewise_angles',
+       'plot_particlewise_velocities', 'plot_particlewise_vorticities']
 
 # Load matplotlib style file
 # plt.style.use('/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/plotstyle.mplstyle')
@@ -93,6 +96,38 @@ def reformat_for_voronoi(filedir, timesteps):
         savepath = os.path.join(filedir, "vor/in/vor_mm_%03d.txt" % t)
         points = np.stack((np.arange(n), lons[t, :] * dx, lats[t, :] * dx, deps[t, :] * dx), axis=1)
         np.savetxt(savepath, points, fmt=["%d", "%.12f", "%.12f", "%.12f"])
+
+
+def compute_vertical_distance_travelled(filepath):
+    """
+    A method to compute the vertical distance each particle has travelled during a simulation. Particles at the surface
+    are not counted unless and until they move back below the surface.
+    :param filepath: String representing the path to the directory containing simulation dep.npy files.
+    :return: v_dist_array : A numpy array containing the vertical distance travelled for each particle.
+    """
+    scale_factor = 0.6/720
+    print("WARNING: Scale factor set to %f. Ensure this is correct." %scale_factor)
+    deps = np.load(os.path.join(filepath, "deps.npy"))
+    nparticles = deps.shape[1]
+
+    deps = np.clip(deps, a_min=None, a_max=360)  # reset depths above surface to the surface.
+    d_v = np.sum(abs(deps[1:, :] - deps[:-1, :]), axis=0)
+
+    d_v = d_v * scale_factor  # convert cells -> m
+
+    return d_v
+
+
+# def compute_particlewise_Veff(path_to_particle_trajectories, path_to_fluid_velocities):
+#     """
+#     A method to compute the effective velocity of each particle at each saved position during its trajectory in a
+#     a completed simulation.
+#     :param path_to_particle_trajectories: String representing the path to the .nc file containing particle trajectories.
+#     :param path_to_fluid_velocities: String representing the path to the .nc file containing fluid velocities.
+#     :return:
+#     """
+#     i = 0
+#     raise NotImplementedError("compute_particlewise_Veff() method from analysis_tools not yet implemented.")
 
 
 def extract_particlewise_epsilon(filepath, epsilon_csv_file="/media/alexander/AKC Passport 2TB/epsilon.csv"):
@@ -188,7 +223,6 @@ def extract_voronoi_epsilon(filepath, epsilon_csv_file="/media/alexander/AKC Pas
         eps[:, ti] = epsilon_array_t[indicies, 3]
         ti += 1
     np.save(os.path.join(os.path.dirname(filepath), "eps_vor.npy"), eps)
-
 
 
 def histogram_cell_velocities(filepaths, n_bins, saveplot=None):
@@ -390,7 +424,6 @@ def plot_voro_concs(filepath, savepath=None):
         # mlab.clf()
 
 
-
 # def plot_entropies(filepath):
 #     tload = [0, -1]
 #     # time_origin=datetime.datetime(2000,1,5)
@@ -572,7 +605,7 @@ def plot_polar_angles(filepath, savepath_hist=None, savepath_timeseries=None):
     dir_y = nc.variables["dir_y"][:][:, timestamps]
     dir_z = nc.variables["dir_z"][:][:, timestamps]
 
-    up = np.array([0., 0., -1])
+    up = np.array([0., 0., 1])
 
     theta = np.zeros_like(dir_x)
     mean = np.zeros(timestamps.size)
@@ -677,7 +710,7 @@ def plot_polar_angles_superimposed(filepaths, colours, labels, savepath_timeseri
         dir_y = nc.variables["dir_y"][:][:, timestamps]
         dir_z = nc.variables["dir_z"][:][:, timestamps]
 
-        up = np.array([0., 0., -1])
+        up = np.array([0., 0., 1])
 
         theta = np.zeros_like(dir_x)
         mean = np.zeros(timestamps.size)
@@ -807,7 +840,7 @@ def animate_directions(p, filepath, savepath=None):
     ax.set_aspect("equal")
     ax.axis("off")
     for t in timestamps:
-        arrow = ax.quiver(r*dir_x[t], r*dir_y[t], -r*dir_z[t], dir_x[t], dir_y[t], -dir_z[t], length=1, color='k')
+        arrow = ax.quiver(r*dir_x[t], r*dir_y[t], r*dir_z[t], dir_x[t], dir_y[t], dir_z[t], length=1, color='k')
         fig.savefig(savepath + "%03d.png" % t)
         arrow.remove()
 
@@ -910,7 +943,7 @@ def plot_particlewise_vorticities(sample, filepath, savepath=None):
     def cart2spher(v_x, v_y, v_z):
         import math
         r = np.sqrt(np.power(v_x, 2) + np.power(v_y, 2) + np.power(v_z, 2))
-        phi = math.pi - np.arctan2(np.sqrt(np.power(v_x, 2) + np.power(v_y, 2)), v_z)  # pi - ans because z is positive downwards
+        phi = np.arctan2(np.sqrt(np.power(v_x, 2) + np.power(v_y, 2)), v_z)
         theta = np.arctan2(v_y, v_x)
         return r, phi, theta
 
@@ -965,39 +998,8 @@ def plot_particlewise_vorticities(sample, filepath, savepath=None):
 
 
 if __name__ == "__main__":
-
-    #
-    # dir = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/vswim_expt/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_0.1vswim"
-    # filepath = dir + "/trajectories_100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_0.1vswim"
-    # savepath_hist = dir + "/theta/mean_polar_hist_"
-    # savepath_timeseries = dir + "/theta/mean_polar_timeseries.png"
-    # savepath_trajectories = dir + "/traj/trajectories.png"
-    # savepath_trajectories_w_dirs = dir + "/traj/trajectories_withdirs.png"
-    # savepath_pwise_angles = dir + "/theta/plotpolar.png"
-    # # savepath_pwise_vels = dir + "/velvorts/plotvels.png"
-    # # savepath_pwise_vorts = dir + "/velvorts/plotvorts.png"
-    #
-    # plot_polar_angles(filepath, savepath_hist, savepath_timeseries)
-    # sample = list(np.random.choice(100000, size=10))
-    # print(sample)
-    # plot_trajectories(sample[0:5], False, filepath, savepath_trajectories)
-    # plot_trajectories(sample[0:2], True, filepath, savepath_trajectories_w_dirs)
-    # plot_particlewise_angles(sample, filepath, savepath_pwise_angles)
-
-    # plot_particlewise_velocities(sample, filepath, savepath_pwise_vels)
-    # plot_particlewise_vorticities(sample, filepath, savepath_pwise_vorts)
-
-    # savepath_animate_dirs = "/home/alexander/Desktop/temp_results/"
-    # animate_directions(5, filepath, savepath_animate_dirs)
-
-
-    # save_plot_dir = "/home/alexander/Documents/QMEE/LSR/fig/velocity_dist.png"
-    # H, bin_edges = histogram_cell_velocities("/media/alexander/AKC Passport 2TB/Maarten/sim022/F*.nc.022", 100, saveplot=save_plot_dir)
-    # np.save("/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/H.npy", H)
-    # np.save("/home/alexander/Documents/turbulence-patchiness-sims/simulations/analysis/analysis_tools/bin_edges.npy", bin_edges)
-
-    # # superimposed polar angle plots
-    # B1 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/B_expt/100000p_30s_0.01dt_0.1sdt_1.0B_initunif_mot_1.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_1.0B_initunif_mot_1.0vswim"
+    # superimposed polar angle plots
+    B1 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/B_expt/100000p_30s_0.01dt_0.1sdt_1.0B_initunif_mot_1.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_1.0B_initunif_mot_1.0vswim"
     # B2 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim"
     # B3 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/B_expt/100000p_30s_0.01dt_0.1sdt_3.0B_initunif_mot_1.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_3.0B_initunif_mot_1.0vswim"
     # B5 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/B_expt/100000p_30s_0.01dt_0.1sdt_5.0B_initunif_mot_1.0vswim/trajectories_100000p_30s_0.01dt_0.1sdt_5.0B_initunif_mot_1.0vswim"
@@ -1022,22 +1024,22 @@ if __name__ == "__main__":
     #
     # plot_voro_concs(
     #     '/media/alexander/DATA/Ubuntu/Maarten/outputs/sim022/initunif/mot/100000p_30s_0.01dt_0.1sdt_2.0B_initunif_mot_1.0vswim',
-    #     './')
-    files = ["/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/dead/100000p_0-60s_0.01dt_0.1sdt_initunif_dead/trajectories_100000p_0-60s_0.01dt_0.1sdt_initunif_dead.nc",
-             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_10um_initunif_mot.nc",
-             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_100um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_100um_initunif_mot.nc",
-             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_500um_initunif_mot.nc",
-             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_1000um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_1000um_initunif_mot.nc",
-             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_10um_initunif_mot.nc",
-             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_100um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_100um_initunif_mot.nc",
-             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_500um_initunif_mot.nc",
-             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_1000um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_1000um_initunif_mot.nc",
-             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_10um_initunif_mot.nc",
-             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_100um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_100um_initunif_mot.nc",
-             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_500um_initunif_mot.nc",
-             "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_1000um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_1000um_initunif_mot.nc"]
-    timesteps = list(np.arange(0, 601, 10))
-    for file in files:
-        # reformat_for_voronoi(os.path.dirname(file), timesteps)
-        extract_voronoi_epsilon(filepath=os.path.join(os.path.dirname(file), "vols_d.npy"),
-                                    epsilon_csv_file='/media/alexander/AKC Passport 2TB/epsilon.csv')
+    # #     './')
+    # files = ["/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/dead/100000p_0-60s_0.01dt_0.1sdt_initunif_dead/trajectories_100000p_0-60s_0.01dt_0.1sdt_initunif_dead.nc",
+    #          "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_10um_initunif_mot.nc",
+    #          "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_100um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_100um_initunif_mot.nc",
+    #          "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_500um_initunif_mot.nc",
+    #          "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_1000um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_1000um_initunif_mot.nc",
+    #          "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_10um_initunif_mot.nc",
+    #          "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_100um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_100um_initunif_mot.nc",
+    #          "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_500um_initunif_mot.nc",
+    #          "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_1000um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_1000um_initunif_mot.nc",
+    #          "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_10um_initunif_mot.nc",
+    #          "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_100um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_100um_initunif_mot.nc",
+    #          "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_500um_initunif_mot.nc",
+    #          "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_1000um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_1000um_initunif_mot.nc"]
+    # timesteps = list(np.arange(0, 601, 10))
+    # for file in files:
+    #     # reformat_for_voronoi(os.path.dirname(file), timesteps)
+    #     extract_voronoi_epsilon(filepath=os.path.join(os.path.dirname(file), "vols_d.npy"),
+    #                                 epsilon_csv_file='/media/alexander/AKC Passport 2TB/epsilon.csv')

@@ -8,6 +8,7 @@ import vg
 from scipy import stats
 from mayavi import mlab
 from math import ceil, floor
+from simulations.util.util import cart2spher
 # mlab.options.backend = 'envisage'
 
 import sys
@@ -847,13 +848,6 @@ def animate_directions(p, filepath, savepath=None):
 
 def plot_particlewise_angles(sample, filepath, savepath=None):
 
-    def cart2spher(v_x, v_y, v_z):
-        import math
-        r = np.sqrt(np.power(v_x, 2) + np.power(v_y, 2) + np.power(v_z, 2))
-        phi = np.arctan2(np.sqrt(np.power(v_x, 2) + np.power(v_y, 2)), v_z)
-        theta = np.arctan2(v_y, v_x)
-        return r, phi, theta
-
     step = 1
     timestamps = np.arange(0, 300, step)
     timestamps[0] = 1
@@ -939,13 +933,6 @@ def plot_particlewise_velocities(sample, filepath, savepath=None):
 
 
 def plot_particlewise_vorticities(sample, filepath, savepath=None):
-
-    def cart2spher(v_x, v_y, v_z):
-        import math
-        r = np.sqrt(np.power(v_x, 2) + np.power(v_y, 2) + np.power(v_z, 2))
-        phi = np.arctan2(np.sqrt(np.power(v_x, 2) + np.power(v_y, 2)), v_z)
-        theta = np.arctan2(v_y, v_x)
-        return r, phi, theta
 
     step = 1
     timestamps = np.arange(0, 300, step)

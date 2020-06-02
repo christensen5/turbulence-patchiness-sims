@@ -9,7 +9,7 @@ import time
 from parcels import Field
 
 
-__all__ = ['rand_unit_vect_3D', 'extract_timestamps', 'find_max_velocities', 'extract_vorticities_c_grid',
+__all__ = ['rand_unit_vect_3D', 'cart2spher', 'extract_timestamps', 'find_max_velocities', 'extract_vorticities_c_grid',
            'uniform_init_field', 'conc_init_field', 'swim_speed_dist', 'join_resumed_sims', 'checkclose_0_30_60']
 
 
@@ -18,6 +18,14 @@ def rand_unit_vect_3D():
     xyz = np.random.normal(size=3)
     mag = sum(i**2 for i in xyz) ** .5
     return xyz / mag
+
+
+def cart2spher(v_x, v_y, v_z):
+    "Convert Cartesian coordinates to spherical coordinates (assuming [0, 0, 1] is upwards (decreasing depth) direction)."
+    r = np.sqrt(np.power(v_x, 2) + np.power(v_y, 2) + np.power(v_z, 2))
+    phi = np.arctan2(np.sqrt(np.power(v_x, 2) + np.power(v_y, 2)), v_z)
+    theta = np.arctan2(v_y, v_x)
+    return r, phi, theta
 
 
 def extract_timestamps(filepaths):

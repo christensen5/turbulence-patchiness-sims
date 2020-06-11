@@ -16,7 +16,7 @@ import sys
 # from ana_objects import ParticleData
 
 all = ['reformat_for_animate', 'reformat_for_voronoi', 'compute_vertical_distance_travelled',
-       'compute_particlewise_Veff', 'extract_particlewise_epsilon',
+       'extract_particlewise_velicities', 'compute_particlewise_Veff', 'extract_particlewise_epsilon',
        'histogram_cell_velocities', 'plot_densities', 'plot_voro_concs', 'plot_polar_angles',
        'plot_polar_angles_superimposed', 'plot_trajectories', 'plot_particlewise_angles',
        'plot_particlewise_velocities', 'plot_particlewise_vorticities']
@@ -117,6 +117,81 @@ def compute_vertical_distance_travelled(filepath):
     d_v = d_v * scale_factor  # convert cells -> m
 
     return d_v
+
+
+def extract_particlewise_fluid_velocities(fluid_velocity_fields, path_to_lonlatdeps, timesteps):
+    """
+    A method to extract the fluid velocities experienced by a collection of particles.
+    :param fluid_velocity_fields: String or list of strings representing the path(s) to the fluid velocities at the relevant timesteps.
+    :param path_to_lonlatdeps: Path to the directory with .npy files containing particle positions at all timesteps.
+    :param timesteps: Timesteps (relative to lonlatdep .npy files) at which to evaluate fluid velocities.
+    :return:
+    """
+    scale_fact = 1200  # 5120./3  # Convert m/s to cells/s
+    print("Scaling factor set to %f - ensure this is correct." % scale_fact)
+
+    # timesteps = np.arange(0, 601, 10)
+    timesteps = list(timesteps)  # cast timesteps to list
+
+    # process fluid velocity field paths
+    paths = sorted(glob(str(fluid_velocity_fields))) if not isinstance(fluid_velocity_fields, list) else fluid_velocity_fields
+    if len(paths) == 0:
+        notfound_paths = fluid_velocity_fields
+        raise IOError("Velocity field files not found: %s" % str(notfound_paths))
+    if len(paths) != len(timesteps):
+        raise AssertionError("Number of velocity field files and number of timesteps must be equal.")
+
+    # load particle trajectories
+    lons = np.load(os.path.join(path_to_lonlatdeps, "lons.npy"))[timesteps, :]
+    lats = np.load(os.path.join(path_to_lonlatdeps, "lats.npy"))[timesteps, :]
+    deps = np.load(os.path.join(path_to_lonlatdeps, "deps.npy"))[timesteps, :]
+
+    nparticles = lons.shape[1]
+
+    # extract velocities one timestep at a time
+    ti = 0
+    for fp in tqdm(paths):
+        if not os.path.exists(fp):
+            raise IOError("FieldSet file not found: %s" % str(fp))
+
+        nc_vfield = netCDF4.Dataset(fp)
+        u_vfield = nc_vfield.variables["u"][:]
+        v_vfield = nc_vfield.variables["v"][:]
+        w_vfield = nc_vfield.variables["w"][:]
+        nc_vfield.close()
+
+        lons_t = lons[ti, :]
+        lats_t = lats[ti, :]
+        deps_t = deps[ti, :]
+
+        xsi_i = lons_t.astype('int')  # particle cell indicies
+        eta_i = lats_t.astype('int')
+        zeta_i = deps_t.astype('int')
+        xsi_d = np.mod(lons_t, 1) # particle coordinates within cells
+        eta_d = np.mod(lats_t, 1)
+        zeta_d = np.mod(deps_t, 1)
+
+        U0 = u_vfield[zeta_i, eta_i + 1, xsi_i] * scale_fact
+        U1 = u_vfield[zeta_i, eta_i + 1, xsi_i + 1] * scale_fact
+        V0 = v_vfield[zeta_i, eta_i, xsi_i + 1] * scale_fact
+        V1 = v_vfield[zeta_i, eta_i + 1, xsi_i + 1] * scale_fact
+        W0 = w_vfield[zeta_i, eta_i + 1, xsi_i + 1] * scale_fact
+        W1 = w_vfield[zeta_i + 1, eta_i + 1, xsi_i + 1] * scale_fact
+
+        if ti == 0:
+            u_pwise = ((1 - xsi_d) * U0 + xsi_d * U1).reshape(1, nparticles)
+            v_pwise = ((1 - eta_d) * V0 + eta_d * V1).reshape(1, nparticles)
+            w_pwise = ((1 - zeta_d) * W0 + zeta_d * W1).reshape(1, nparticles)
+        else:
+            u_pwise = np.vstack((u_pwise, ((1 - xsi_d) * U0 + xsi_d * U1).reshape(1, nparticles)))
+            v_pwise = np.vstack((v_pwise, ((1 - eta_d) * V0 + eta_d * V1).reshape(1, nparticles)))
+            w_pwise = np.vstack((w_pwise, ((1 - zeta_d) * W0 + zeta_d * W1).reshape(1, nparticles)))
+
+        ti += 1
+
+    np.save(os.path.join(path_to_lonlatdeps, "u_pwise.npy"), u_pwise)
+    np.save(os.path.join(path_to_lonlatdeps, "v_pwise.npy"), v_pwise)
+    np.save(os.path.join(path_to_lonlatdeps, "w_pwise.npy"), w_pwise)
 
 
 # def compute_particlewise_Veff(path_to_particle_trajectories, path_to_fluid_velocities):
@@ -1030,3 +1105,7 @@ if __name__ == "__main__":
     #     # reformat_for_voronoi(os.path.dirname(file), timesteps)
     #     extract_voronoi_epsilon(filepath=os.path.join(os.path.dirname(file), "vols_d.npy"),
     #                                 epsilon_csv_file='/media/alexander/AKC Passport 2TB/epsilon.csv')
+    fluid_velocity_fields = "/media/alexander/AKC Passport 2TB/everysec/F*n.nc_vort.123"
+    path_to_lonlatdeps = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_10um_initunif_mot"
+    timesteps = np.arange(0, 601, 10)
+    extract_particlewise_fluid_velocities(fluid_velocity_fields, path_to_lonlatdeps, timesteps)

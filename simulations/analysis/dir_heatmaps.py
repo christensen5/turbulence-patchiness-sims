@@ -82,7 +82,7 @@ for sim in tqdm(all_sims):
         ax.axvline(pol_avg, color='k', lw=1.)
         ax.axvline(-pol_avg, color='k', lw=1.)
         ax.annotate("{:.1f}".format(np.rad2deg(pol_avg)), xy=(pol_avg, ax.get_ylim()[1]), color='k')
-        ax.set_xticklabels(['0', '45', '90', '135', '180', '-135', '-90', '-45'])
+        ax.set_xticklabels(['0', '45', '90', '135', '180', '-135', '', '-45'])
         ax.set_yticks([])
         if sim_id < 4:
             ax.set_title("v = {:n}um".format(sim["V"]), pad=20,  fontsize=15)
@@ -117,7 +117,7 @@ for sim in tqdm(all_sims):
         ax.set_rlabel_position(180)
 
 # plt.show()
-fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/dir/100000p_dir_%s_20-60s_nosurf.png" % (heatstring),
-            bbox_inches='tight')
+fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/dir/100000p_dir_%s_20-60s_nosurf.png" % (heatstring))
+            # bbox_inches='tight')
 
 

@@ -179,13 +179,13 @@ def extract_particlewise_fluid_velocities(fluid_velocity_fields, path_to_lonlatd
         W1 = w_vfield[zeta_i + 1, eta_i + 1, xsi_i + 1] * scale_fact
 
         if ti == 0:
-            u_pwise = ((1 - xsi_d) * U0 + xsi_d * U1).reshape(1, nparticles)
-            v_pwise = ((1 - eta_d) * V0 + eta_d * V1).reshape(1, nparticles)
-            w_pwise = ((1 - zeta_d) * W0 + zeta_d * W1).reshape(1, nparticles)
+            u_pwise = ((1 - xsi_d) * U0 + xsi_d * U1).reshape(nparticles, 1)
+            v_pwise = ((1 - eta_d) * V0 + eta_d * V1).reshape(nparticles, 1)
+            w_pwise = ((1 - zeta_d) * W0 + zeta_d * W1).reshape(nparticles, 1)
         else:
-            u_pwise = np.vstack((u_pwise, ((1 - xsi_d) * U0 + xsi_d * U1).reshape(1, nparticles)))
-            v_pwise = np.vstack((v_pwise, ((1 - eta_d) * V0 + eta_d * V1).reshape(1, nparticles)))
-            w_pwise = np.vstack((w_pwise, ((1 - zeta_d) * W0 + zeta_d * W1).reshape(1, nparticles)))
+            u_pwise = np.hstack((u_pwise, ((1 - xsi_d) * U0 + xsi_d * U1).reshape(nparticles, 1)))
+            v_pwise = np.hstack((v_pwise, ((1 - eta_d) * V0 + eta_d * V1).reshape(nparticles, 1)))
+            w_pwise = np.hstack((w_pwise, ((1 - zeta_d) * W0 + zeta_d * W1).reshape(nparticles, 1)))
 
         ti += 1
 
@@ -1106,6 +1106,6 @@ if __name__ == "__main__":
     #     extract_voronoi_epsilon(filepath=os.path.join(os.path.dirname(file), "vols_d.npy"),
     #                                 epsilon_csv_file='/media/alexander/AKC Passport 2TB/epsilon.csv')
     fluid_velocity_fields = "/media/alexander/AKC Passport 2TB/everysec/F*n.nc_vort.123"
-    path_to_lonlatdeps = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_10um_initunif_mot"
+    path_to_lonlatdeps = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_100um_initunif_mot"
     timesteps = np.arange(0, 601, 10)
     extract_particlewise_fluid_velocities(fluid_velocity_fields, path_to_lonlatdeps, timesteps)

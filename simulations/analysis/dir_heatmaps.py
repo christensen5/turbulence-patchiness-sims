@@ -20,23 +20,23 @@ filepath_v500_B1 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/init
 filepath_v500_B3 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_500um_initunif_mot.nc"
 filepath_v500_B5 = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_500um_initunif_mot.nc"
 
-data_v10_B1 = {'filepath': "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_10um_initunif_mot.nc",
+data_v10_B1 = {'nc': filepath_v10_B1,
                'V': 10, 'B': 1.0}
-data_v10_B3 = {'filepath': "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_10um_initunif_mot.nc",
+data_v10_B3 = {'nc': filepath_v10_B3,
                'V': 10, 'B': 3.0}
-data_v10_B5 = {'filepath': "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_10um_initunif_mot.nc",
+data_v10_B5 = {'nc': filepath_v10_B5,
                'V': 10, 'B': 5.0}
-data_v100_B1 = {'filepath': "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_100um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_100um_initunif_mot.nc",
+data_v100_B1 = {'nc': filepath_v100_B1,
                 'V': 100, 'B': 1.0}
-data_v100_B3 = {'filepath': "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_100um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_100um_initunif_mot.nc",
+data_v100_B3 = {'nc': filepath_v100_B3,
                 'V': 100, 'B': 3.0}
-data_v100_B5 = {'filepath': "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_100um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_100um_initunif_mot.nc",
+data_v100_B5 = {'nc': filepath_v100_B5,
                 'V': 100, 'B': 5.0}
-data_v500_B1 = {'filepath': "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_500um_initunif_mot.nc",
+data_v500_B1 = {'nc': filepath_v500_B1,
                 'V': 500, 'B': 1.0}
-data_v500_B3 = {'filepath': "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_3.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_3.0B_500um_initunif_mot.nc",
+data_v500_B3 = {'nc': filepath_v500_B3,
                 'V': 500, 'B': 3.0}
-data_v500_B5 = {'filepath': "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_500um_initunif_mot.nc",
+data_v500_B5 = {'nc': filepath_v500_B5,
                 'V': 500, 'B': 5.0}
 
 all_sims = [data_v10_B1, data_v100_B1, data_v500_B1,
@@ -53,7 +53,7 @@ fig = plt.figure(figsize=(15, 9))
 sim_id = 0
 for sim in tqdm(all_sims):
     sim_id += 1
-    nc = netCDF4.Dataset(sim["filepath"])
+    nc = netCDF4.Dataset(sim["nc"])
     deps = nc.variables["z"][:][:, timestamps]
     dir_x = nc.variables["dir_x"][:][:, timestamps]
     dir_y = nc.variables["dir_y"][:][:, timestamps]

@@ -7,9 +7,11 @@ import time
 import os
 
 
-path_to_trajectories = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_10um_initunif_mot"
+path_to_trajectories = "/home/alexander/Documents/DATA/Ubuntu/Maarten/outputs/results123/100000p_0-60s_0.01dt_0.1sdt_1.0B_500um_initunif_mot"
 timesteps = list(np.arange(200, 601, 10))
-particles = list(np.random.randint(0, 100000, 10000))
+particles = list(np.arange(0, 100000)) #list(np.random.randint(0, 100000, 10000))
+
+save_clustering = True
 
 # load simulation trajectories
 lons = np.load(os.path.join(path_to_trajectories, "lons.npy"))[timesteps, :][:, particles]
@@ -30,7 +32,7 @@ deps = np.clip(deps, 0., 360.)
 stackedTrajectories = np.hstack((lons.transpose(), lats.transpose(), deps.transpose()))
 
 # define OPTICS parameters
-min_samples = 10
+min_samples = 100
 
 # define clustering method parameters
 # xi =
@@ -46,6 +48,13 @@ core_distances = optics_clustering.core_distances_
 predecessor = optics_clustering.predecessor_
 ordering = optics_clustering.ordering_
 
+if save_clustering:
+    savedir = "/home/alexander/Documents/DATA/Ubuntu/Maarten/outputs/results123/100000p_0-60s_0.01dt_0.1sdt_1.0B_500um_initunif_mot/optics/max" + str(
+        min_samples)
+    np.save(os.path.join(savedir, "reachability"), reachability)
+    np.save(os.path.join(savedir, "core_distances"), core_distances)
+    np.save(os.path.join(savedir, "predecessor"), predecessor)
+    np.save(os.path.join(savedir, "ordering"), ordering)
 
 labels_500 = cluster_optics_dbscan(reachability=reachability, core_distances=core_distances, ordering=ordering,
                                    eps=eps)

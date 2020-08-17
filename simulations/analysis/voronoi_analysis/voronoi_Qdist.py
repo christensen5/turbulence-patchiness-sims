@@ -1,6 +1,7 @@
 """
 This script plots histograms of the Q-statistic of all our simulations at different timesteps. The Q-statistic here
-is computed using the volumes of the Voronoi tessellation of the particle positions at each timestep."""
+is computed using the volumes of the Voronoi tessellation of the particle positions at each timestep.
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt

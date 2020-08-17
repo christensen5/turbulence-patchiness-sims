@@ -72,22 +72,56 @@ epsilon_array[:, 0] -= time_offset  # align timestamps with the Parcels simulati
 epsilon_array[:, 3] = -epsilon_array[:, 3]  # make epsilon column positive
 epsilon_timestamps = np.unique(epsilon_array[:, 0])  # extract timestamps at which we have epsilon data
 
-sns.set(font_scale=.8, rc={'figure.figsize':(15,15)})
-plot = sns.jointplot(epsilon_array[:, 3], epsilon_array[:, 1],
-                         #marginal_kws=dict(bins=100, norm_hist=True),
-                         s=0.5, alpha=0.1)
+
+# # Joint plot with distributions on axes
+# sns.set(font_scale=.8, rc={'figure.figsize':(15,15)})
+# plot = sns.jointplot(epsilon_array[:, 3], epsilon_array[:, 1],
+#                          #marginal_kws=dict(bins=100, norm_hist=True),
+#                          s=0.5, alpha=0.1)
+# # Draw boundaries between depth ranges (see voronoi_Qovertime_vs_Depth.py) and shade them.
+# plot.ax_joint.axhline(y=0.1, color="k", ls=":", lw=1)
+# plot.ax_joint.axhline(y=0.17, color="k", ls=":", lw=1)
+# plot.ax_joint.axhline(y=0.24, color="k", ls=":", lw=1)
+# plot.ax_joint.axhline(y=0.3, color="k", ls=":", lw=1)
+# plot.ax_joint.fill_between(np.linspace(plot.ax_joint.get_xlim()[0], plot.ax_joint.get_xlim()[1], 100),
+#                            0.1, 0.17,#plot.ax_joint.get_ylim()[1],
+#                            color="k", alpha=0.2)
+# plot.set_axis_labels("epsilon", "depth (m)")
+# plt.subplots_adjust(top=0.9)
+# plot.fig.suptitle(r'Fluid simulation depth vs turbulent dissipation rate.', fontsize=16)
+# # plt.show()
+# plot.savefig(
+#     "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/DepthvsEps/DepthvsEps_withDist.png")
+# # plt.show()
+# plt.clf()
+
+
+# Paper plot
+# sns.set_style("white")
+# sns.despine()
+plot = sns.scatterplot(x=epsilon_array[:, 3], y=epsilon_array[:, 1], linewidth=0, alpha=0.2, s=10)
 # Draw boundaries between depth ranges (see voronoi_Qovertime_vs_Depth.py) and shade them.
-plot.ax_joint.axhline(y=0.1, color="k", ls=":", lw=1)
-plot.ax_joint.axhline(y=0.17, color="k", ls=":", lw=1)
-plot.ax_joint.axhline(y=0.24, color="k", ls=":", lw=1)
-plot.ax_joint.axhline(y=0.3, color="k", ls=":", lw=1)
-plot.ax_joint.fill_between(np.linspace(plot.ax_joint.get_xlim()[0], plot.ax_joint.get_xlim()[1], 100),
-                           0.1, plot.ax_joint.get_ylim()[1],
-                           color="k", alpha=0.2)
-plot.set_axis_labels("epsilon", "depth (m)")
+plot.axhline(y=0.1, color="k", ls=":", lw=1)
+plot.axhline(y=0.17, color="k", ls=":", lw=1)
+plot.axhline(y=0.24, color="k", ls=":", lw=1)
+plot.axhline(y=0.3, color="k", ls=":", lw=1)
+plot.fill_between(np.linspace(plot.get_xlim()[0], plot.get_xlim()[1], 100),
+                           0.1, 0.3,
+                           color="k", alpha=0.15)
+plot.set(xlabel=r"$\epsilon$ [$m^2 s^{-3}$]", ylabel="depth [m]",
+         xlim=[-0.2e-4, 3.4e-4])
+# show depth region boundaries on right-hand y-axis
+ax_right = plot.twinx()
+ax_right.set(ylim=[0, 0.3])
+ax_right.set_ylim(plot.get_ylim())
+ax_right.set_yticks([0.10, 0.17, 0.24, 0.30])
+# label depth regions
+plot.text(3.05e-4, 0.27, "Shallow", horizontalalignment='center', verticalalignment='center', size='16', color='black')
+plot.text(3.05e-4, 0.205, "Mid", horizontalalignment='center', verticalalignment='center', size='16', color='black')
+plot.text(3.05e-4, 0.135, "Deep", horizontalalignment='center', verticalalignment='center', size='16', color='black')
+plt.ticklabel_format(style='sci', scilimits=(0, 0), axis='x')
 plt.subplots_adjust(top=0.9)
-plot.fig.suptitle(r'Fluid simulation depth vs turbulent dissipation rate.', fontsize=18)
-plot.savefig(
-    "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/DepthvsEps/DepthvsEps.png")
+plot.set_title(r'Fluid DNS turbulent dissipation rate ($\epsilon$) vs depth', fontsize=16)
+plt.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/DepthvsEps/DepthvsEps.png")
 # plt.show()
-plt.clf()
+# plt.clf()

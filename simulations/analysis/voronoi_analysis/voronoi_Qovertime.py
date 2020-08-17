@@ -71,18 +71,22 @@ all_motile_concentrations = [data_v10_B1, data_v10_B3, data_v10_B5,
                              data_v100_B1, data_v100_B3, data_v100_B5,
                              data_v500_B1, data_v500_B3, data_v500_B5]
 
+# Set plot types
+plot_3x1_superimposed = False
+plot_3x3 = True
+
 
 # ======================================================================================================================
 # Compute Q for each motile simulation.
 
-f = 0.01
+f = 0.1
 
 avg_func = np.median
 if not (avg_func.__name__ == 'mean' or avg_func.__name__ == 'median'):
     raise NotImplementedError("Q-analysis must use either mean or median, not %s." % avg_func.__name__)
 
 # keep or remove surface particles
-nosurf = False
+nosurf = True
 surfstring = "_nosurf" if nosurf is True else ""
 
 timestamps = np.arange(0, 61, 1)#, 30]
@@ -115,62 +119,122 @@ for simdata_dict in tqdm(all_motile_concentrations):
 
 # ======================================================================================================================
 # PLOT Q OVER TIME.
+if plot_3x1_superimposed:
+    fig = plt.figure(figsize=(15, 9))
 
-fig = plt.figure(figsize=(15, 9))
+    colours = np.zeros((3, 3))
+    colours[1, :] = np.linspace(0, 1, 3)
 
-colours = np.zeros((3, 3))
-colours[1, :] = np.linspace(0, 1, 3)
+    plt.box(False)
+    ax_v10 = plt.subplot(311)
+    l_v10_B1 = ax_v10.plot(timestamps, data_v10_B1["Q"], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0 v=10um')
+    l_v10_B3 = ax_v10.plot(timestamps, data_v10_B3["Q"], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0 v=10um')
+    l_v10_B5 = ax_v10.plot(timestamps, data_v10_B5["Q"], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0 v=10um')
+    mean_v10_B1 = plt.axhline(np.mean(data_v10_B1["Q"]), color=colours[:, 0], linestyle=':', linewidth=1)
+    mean_v10_B3 = plt.axhline(np.mean(data_v10_B3["Q"]), color=colours[:, 1], linestyle=':', linewidth=1)
+    mean_v10_B5 = plt.axhline(np.mean(data_v10_B5["Q"]), color=colours[:, 2], linestyle=':', linewidth=1)
+    plt.axhline(0, color='k')
+    ax_v10.set_xlabel("Time", fontsize=25)
+    ax_v10.set_ylabel("Q", fontsize=25)
+    for tick in ax_v10.xaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+    for tick in ax_v10.yaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+    ax_v10.legend(loc="upper left", fontsize=15)
+    ax_v100 = plt.subplot(312)
+    l_v100_B1 = ax_v100.plot(timestamps, data_v100_B1["Q"], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0 v=100um')
+    l_v100_B3 = ax_v100.plot(timestamps, data_v100_B3["Q"], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0 v=100um')
+    l_v100_B5 = ax_v100.plot(timestamps, data_v100_B5["Q"], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0 v=100um')
+    mean_v100_B1 = plt.axhline(np.mean(data_v100_B1["Q"]), color=colours[:, 0], linestyle=':', linewidth=1)
+    mean_v100_B3 = plt.axhline(np.mean(data_v100_B3["Q"]), color=colours[:, 1], linestyle=':', linewidth=1)
+    mean_v100_B5 = plt.axhline(np.mean(data_v100_B5["Q"]), color=colours[:, 2], linestyle=':', linewidth=1)
+    plt.axhline(0, color='k')
+    ax_v100.set_xlabel("Time", fontsize=25)
+    ax_v100.set_ylabel("Q", fontsize=25)
+    for tick in ax_v100.xaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+    for tick in ax_v100.yaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+    ax_v100.legend(loc="upper left", fontsize=15)
+    ax_v500 = plt.subplot(313)
+    l_v500_B1 = ax_v500.plot(timestamps, data_v500_B1["Q"], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0 v=500um')
+    l_v500_B3 = ax_v500.plot(timestamps, data_v500_B3["Q"], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0 v=500um')
+    l_v500_B5 = ax_v500.plot(timestamps, data_v500_B5["Q"], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0 v=500um')
+    mean_v500_B1 = plt.axhline(np.mean(data_v500_B1["Q"]), color=colours[:, 0], linestyle=':', linewidth=1)
+    mean_v500_B3 = plt.axhline(np.mean(data_v500_B3["Q"]), color=colours[:, 1], linestyle=':', linewidth=1)
+    mean_v500_B5 = plt.axhline(np.mean(data_v500_B5["Q"]), color=colours[:, 2], linestyle=':', linewidth=1)
+    plt.axhline(0, color='k')
+    ax_v500.set_xlabel("Time", fontsize=25)
+    ax_v500.set_ylabel("Q", fontsize=25)
+    for tick in ax_v500.xaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+    for tick in ax_v500.yaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+    ax_v500.legend(loc="upper left", fontsize=15)
 
-plt.box(False)
-ax_v10 = plt.subplot(311)
-l_v10_B1 = ax_v10.plot(timestamps, data_v10_B1["Q"], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0 v=10um')
-l_v10_B3 = ax_v10.plot(timestamps, data_v10_B3["Q"], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0 v=10um')
-l_v10_B5 = ax_v10.plot(timestamps, data_v10_B5["Q"], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0 v=10um')
-mean_v10_B1 = plt.axhline(np.mean(data_v10_B1["Q"]), color=colours[:, 0], linestyle=':', linewidth=1)
-mean_v10_B3 = plt.axhline(np.mean(data_v10_B3["Q"]), color=colours[:, 1], linestyle=':', linewidth=1)
-mean_v10_B5 = plt.axhline(np.mean(data_v10_B5["Q"]), color=colours[:, 2], linestyle=':', linewidth=1)
-plt.axhline(0, color='k')
-ax_v10.set_xlabel("Time", fontsize=25)
-ax_v10.set_ylabel("Q", fontsize=25)
-for tick in ax_v10.xaxis.get_major_ticks():
-        tick.label.set_fontsize(20)
-for tick in ax_v10.yaxis.get_major_ticks():
-        tick.label.set_fontsize(20)
-ax_v10.legend(loc="upper left", fontsize=15)
-ax_v100 = plt.subplot(312)
-l_v100_B1 = ax_v100.plot(timestamps, data_v100_B1["Q"], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0 v=100um')
-l_v100_B3 = ax_v100.plot(timestamps, data_v100_B3["Q"], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0 v=100um')
-l_v100_B5 = ax_v100.plot(timestamps, data_v100_B5["Q"], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0 v=100um')
-mean_v100_B1 = plt.axhline(np.mean(data_v100_B1["Q"]), color=colours[:, 0], linestyle=':', linewidth=1)
-mean_v100_B3 = plt.axhline(np.mean(data_v100_B3["Q"]), color=colours[:, 1], linestyle=':', linewidth=1)
-mean_v100_B5 = plt.axhline(np.mean(data_v100_B5["Q"]), color=colours[:, 2], linestyle=':', linewidth=1)
-plt.axhline(0, color='k')
-ax_v100.set_xlabel("Time", fontsize=25)
-ax_v100.set_ylabel("Q", fontsize=25)
-for tick in ax_v100.xaxis.get_major_ticks():
-        tick.label.set_fontsize(20)
-for tick in ax_v100.yaxis.get_major_ticks():
-        tick.label.set_fontsize(20)
-ax_v100.legend(loc="upper left", fontsize=15)
-ax_v500 = plt.subplot(313)
-l_v500_B1 = ax_v500.plot(timestamps, data_v500_B1["Q"], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0 v=500um')
-l_v500_B3 = ax_v500.plot(timestamps, data_v500_B3["Q"], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0 v=500um')
-l_v500_B5 = ax_v500.plot(timestamps, data_v500_B5["Q"], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0 v=500um')
-mean_v500_B1 = plt.axhline(np.mean(data_v500_B1["Q"]), color=colours[:, 0], linestyle=':', linewidth=1)
-mean_v500_B3 = plt.axhline(np.mean(data_v500_B3["Q"]), color=colours[:, 1], linestyle=':', linewidth=1)
-mean_v500_B5 = plt.axhline(np.mean(data_v500_B5["Q"]), color=colours[:, 2], linestyle=':', linewidth=1)
-plt.axhline(0, color='k')
-ax_v500.set_xlabel("Time", fontsize=25)
-ax_v500.set_ylabel("Q", fontsize=25)
-for tick in ax_v500.xaxis.get_major_ticks():
-        tick.label.set_fontsize(20)
-for tick in ax_v500.yaxis.get_major_ticks():
-        tick.label.set_fontsize(20)
-ax_v500.legend(loc="upper left", fontsize=15)
+    if nosurf:
+        st = fig.suptitle("Q statistic over time (excluding surface particles) (f=%0.2f)" % f, fontsize=25)
+    else:
+        st = fig.suptitle("Q statistic over time (including surface particles) (f=%0.2f)" % f, fontsize=25)
+    # plt.show()
+    fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/Q/Qovertime/3x1_superimposed/100000p_%0.2ff_Q_overtime_%s%s.png" % (f, avg_func.__name__, surfstring))
 
-if nosurf:
-    st = fig.suptitle("Q statistic over time (excluding surface particles) (f=%0.2f)" % f, fontsize=25)
-else:
-    st = fig.suptitle("Q statistic over time (including surface particles) (f=%0.2f)" % f, fontsize=25)
-# plt.show()
-fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/Q/Qovertime/100000p_%0.2ff_Q_overtime_%s%s.png" % (f, avg_func.__name__, surfstring))
+
+if plot_3x3:
+    fig = plt.figure(figsize=(20, 16))
+
+    if nosurf:
+        st = fig.suptitle("Q statistic over time (excluding surface layer) (f=%0.2f)" % f, fontsize=32)
+    else:
+        st = fig.suptitle("Q statistic over time (including surface layer) (f=%0.2f)" % f, fontsize=32)
+
+    colour = [0, 0.5, 0]
+
+    plt.box(False)
+    plot_letter = '_abcdefghi'  # for labelling subplots
+    plot_index = 330  # for indexing subplots
+    for sim in all_motile_concentrations:
+        plot_index += 1
+        ax = plt.subplot(plot_index)
+        # set axis limits and tick locations
+        if f == 0.1:
+            ax.set_ylim([-0.21, 0.06])
+            ax.set_yticks([-0.2, -0.15, -0.1, -0.05, 0, 0.05])
+        elif f == 0.01:
+            ax.set_ylim([-0.41, 0.41])
+            ax.set_yticks([-0.4, -0.2, 0, 0.2, 0.4])
+        # plot Q timeseries and mean value
+        plt.axhline(0, color='k')
+        Q_line = ax.plot(timestamps, sim["Q"], '-o', color=colour, linewidth=2, markersize=3, label=r'B={:1.1f}s$^{{-1}}$ V={:d}um'.format(sim["B"], sim["V"]))
+        Qmean = np.mean(sim["Q"])
+        Q_meanline = plt.axhline(Qmean, color=colour, linestyle='--', linewidth=2)
+        # annotate each subplot with a letter (for labelling) and the Q mean value
+        ax.text(0.04, 0.04, "("+plot_letter[plot_index % 10]+")",
+                horizontalalignment='left', verticalalignment="bottom", transform=ax.transAxes, fontsize=18)
+        ax.text(1.02, (Qmean - ax.get_ylim()[0])/(ax.get_ylim()[1] - ax.get_ylim()[0]), "{:1.2f}".format(Qmean), color=colour,
+                horizontalalignment='left', verticalalignment='center', transform=ax.transAxes, fontsize=20)
+        # axis ticks fontsize handling
+        for tick in ax.xaxis.get_major_ticks():
+                tick.label.set_fontsize(20)
+        for tick in ax.yaxis.get_major_ticks():
+                tick.label.set_fontsize(20)
+        # add B values above columns and vswim values alongside rows
+        if plot_index % 10 < 4:
+            ax.text(0.5, 1.1, r'B = {:1.1f}s$^{{-1}}$'.format(sim["B"]),
+                    horizontalalignment='center', verticalalignment='center',
+                    transform=ax.transAxes, fontsize=25)
+        if plot_index % 10 in [1, 4, 7]:
+            ax.text(-0.4, 0.5, 'Vswim = {:d}um'.format(sim["V"]),
+                    horizontalalignment='center', verticalalignment='center',
+                    transform=ax.transAxes, fontsize=25, rotation=90)
+        # restrict axis labels to left column and bottom row
+        if plot_index % 10 > 6:
+            ax.set_xlabel("Time", fontsize=25)
+        if plot_index % 10 in [1, 4, 7]:
+            ax.set_ylabel("Q", fontsize=25)
+
+    fig.tight_layout(pad=0.7)
+    fig.subplots_adjust(top=0.9)
+
+    # plt.show()
+    fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/Q/Qovertime/3x3/100000p_%0.2ff_Q_overtime_%s%s.png" % (f, avg_func.__name__, surfstring))

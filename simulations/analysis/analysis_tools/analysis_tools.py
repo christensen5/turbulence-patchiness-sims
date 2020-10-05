@@ -18,7 +18,7 @@ import sys
 all = ['reformat_for_animate', 'reformat_for_voronoi', 'compute_vertical_distance_travelled',
        'extract_particlewise_velicities', 'compute_particlewise_Veff', 'extract_particlewise_epsilon',
        'histogram_cell_velocities', 'plot_densities', 'plot_voro_concs', 'plot_polar_angles',
-       'plot_polar_angles_superimposed', 'plot_trajectories', 'plot_particlewise_angles',
+       'plot_polar_angles_superimposed', 'plot_trajectories', 'plot_depth_trajectories', 'plot_snapshot', 'plot_particlewise_angles',
        'plot_particlewise_velocities', 'plot_particlewise_vorticities']
 
 # Load matplotlib style file
@@ -734,7 +734,7 @@ def plot_polar_angles(filepath, savepath_hist=None, savepath_timeseries=None):
     plt.close('plt_means')
 
 
-def plot_trajectories(sample, orientations, filepath, savepath=None):
+def plot_trajectories(sample, orientations, colours, filepath, savepath=None):
     from mpl_toolkits.mplot3d import Axes3D
     import mpl_toolkits.mplot3d.art3d as art3d
     step = 1
@@ -742,10 +742,11 @@ def plot_trajectories(sample, orientations, filepath, savepath=None):
     timestamps = np.arange(0, 300, step)
     timestamps[0] = 1
 
-    nc = netCDF4.Dataset(filepath + ".nc")
-    x = nc.variables["lon"][:][sample][:, timestamps]
-    y = nc.variables["lat"][:][sample][:, timestamps]
-    z = nc.variables["z"][:][sample][:, timestamps]
+    nc = netCDF4.Dataset(filepath)
+    scale_factor = 0.6/720  # cells --> metres
+    x = nc.variables["lon"][:][sample][:, timestamps] * scale_factor
+    y = nc.variables["lat"][:][sample][:, timestamps] * scale_factor
+    z = nc.variables["z"][:][sample][:, timestamps] * scale_factor
     if orientations:
         dir_x = nc.variables["dir_x"][:][sample][:, timestamps]
         dir_y = nc.variables["dir_y"][:][sample][:, timestamps]
@@ -755,25 +756,132 @@ def plot_trajectories(sample, orientations, filepath, savepath=None):
     fig = plt.figure(figsize=(15, 15))
 
     ax = plt.axes(projection='3d')
-    ax.set_title("Particle Trajectories", fontsize=20)
-    ax.set_xlabel("Longitude", fontsize=20)
-    ax.set_ylabel("Latitude", fontsize=20)
-    ax.set_zlabel("Depth", fontsize=20)
+    ax.set_title("Particle Trajectories", fontsize=24)
+    ax.set_xlabel("Longitude [m]", fontsize=24, labelpad=40)
+    ax.set_ylabel("Latitude [m]", fontsize=24, labelpad=30)
+    ax.set_zlabel("Depth [m]", fontsize=24, labelpad=20)
 
-    m = 1
+    m = 5
     for p in tqdm(range(len(sample))):
-        ax.scatter(x[p, 0], y[p, 0], -z[p, 0], 'c', c='k', s=6.0)  # mark start points
-        ax.plot(x[p, :], y[p, :], -z[p, :], 'o', markersize=4)
+        ax.scatter(x[p, 0], y[p, 0], z[p, 0], 'c', c='k', s=6.0)  # mark start points
+        ax.plot(x[p, :], y[p, :], z[p, :], 'o', c=colours[p], markersize=4)
         if orientations:
-            ax.quiver(x[p, ::m], y[p, ::m], -z[p, ::m],
-                  dir_x[p, ::m], dir_y[p, ::m], -dir_z[p, ::m],
-                  length=7, color='k')
+            ax.quiver(x[p, ::m], y[p, ::m], z[p, ::m],
+                  dir_x[p, ::m], dir_y[p, ::m], dir_z[p, ::m],
+                  length=0.01, color='k')
 
-    # ax.set_xlim3d(0, 720)
-    # ax.set_ylim3d(0, 720)
-    # ax.set_zlim3d(-180, 0)
+    ax.set_xlim3d(0, 0.6)# 720)
+    ax.set_ylim3d(0, 0.6)# 720)
+    ax.set_zlim3d(0, 0.3)# 360)
+    ax.set_xticks([0, 0.2, 0.4, 0.6])
+    ax.set_yticks([0, 0.2, 0.4, 0.6])
+    ax.set_zticks([0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3])
+    ax.xaxis.set_tick_params(labelsize=22)
+    ax.yaxis.set_tick_params(labelsize=22)
+    ax.zaxis.set_tick_params(labelsize=22)
+    ax.xaxis.set_rotate_label(False)
+    ax.yaxis.set_rotate_label(False)
+    # plt.subplots_adjust(top=0.9)
+    plt.show()
+    # fig.savefig(savepath)
+
+
+def plot_depth_trajectories(samplesize, colours, filepath_slow, filepath_agile, savepath=None):
+    from mpl_toolkits.mplot3d import Axes3D
+    import mpl_toolkits.mplot3d.art3d as art3d
+    timestamps = np.arange(0, 600)
+    # timestamps[0] = 1
+    colours_slow = ["tab:blue", "tab:orange", "tab:green", "tab:purple", "tab:red", "tab:brown", "tab:pink", "tab:gray", "tab:olive", "tab:cyan"]#["tab:red", "tab:purple"]
+    colours_agile = ["tab:blue", "tab:orange", "tab:green", "tab:purple", "tab:red", "tab:brown", "tab:pink", "tab:gray", "tab:olive", "tab:cyan"]#["tab:blue", "tab:orange"]
+
+    scale_factor = 0.6/720  # cells --> metres
+    nc_slow = netCDF4.Dataset(filepath_slow)
+    z_slow = nc_slow.variables["z"][:][:, timestamps] * scale_factor
+    nc_slow.close()
+    nc_agile = netCDF4.Dataset(filepath_agile)
+    z_agile = nc_agile.variables["z"][:][:, timestamps] * scale_factor
+    nc_agile.close()
+
+    index_slow = np.intersect1d(np.where((np.max(z_slow, axis=1) - np.min(z_slow, axis=1)) > 0.1), np.where(np.mean(z_slow, axis=1) < 0.2))
+    z_slow = z_slow[index_slow, :]
+    sample_slow = z_slow[np.random.choice(z_slow.shape[0], samplesize), :]
+    index_agile = np.intersect1d(np.where((np.max(z_agile, axis=1) - np.min(z_agile, axis=1)) > 0.1),
+                                np.where(np.mean(z_agile, axis=1) < 0.2))
+    z_agile = z_agile[index_agile, :]
+    sample_agile = z_agile[np.random.choice(z_agile.shape[0], samplesize), :]
+    
+    fig, [ax_slow, ax_agile] = plt.subplots(1, 2, figsize=(25, 7), constrained_layout=True)
+
+    ax_slow.text(-0.1, 1., 'a', ha='left', va="bottom", transform=ax_slow.transAxes, fontsize=24, fontweight="bold")
+    ax_agile.text(-0.1, 1., 'b', ha='left', va="bottom", transform=ax_agile.transAxes, fontsize=24, fontweight="bold")
+
+    for ax in [ax_slow, ax_agile]:
+        ax.set_xlabel("Time [s]", fontsize=24)#, labelpad=40)
+        ax.set_ylabel("Depth [m]", fontsize=24)  # , labelpad=30)
+        ax.set_xlim([0, 601])
+        ax.set_ylim([0., 0.31])
+        ax.set_xticks(np.arange(0, 600, 100))
+        ax.set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
+        ax.set_yticks([0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30])
+        ax.xaxis.set_tick_params(labelsize=22)
+        ax.yaxis.set_tick_params(labelsize=22)
+
+    for p in tqdm(range(samplesize)):
+        ax_slow.plot(np.arange(0, len(timestamps)), sample_slow[p, :], c=colours_slow[p], markersize=4)
+        ax_agile.plot(np.arange(0, len(timestamps)), sample_agile[p, :], c=colours_agile[p], markersize=4)
+
+    # plt.show()
+    fig.savefig(savepath)
+
+
+def plot_snapshot(timestamp, filepath, savepath=None):
+    from mpl_toolkits.mplot3d import Axes3D
+    import mpl_toolkits.mplot3d.art3d as art3d
+
+    nc = netCDF4.Dataset(filepath)
+    scale_factor = 0.6/720  # cells --> metres
+    nosurf_indicies = nc.variables["z"][:][:, timestamp] < 360
+    x = nc.variables["lon"][:][:, timestamp][nosurf_indicies] * scale_factor
+    y = nc.variables["lat"][:][:, timestamp][nosurf_indicies] * scale_factor
+    z = nc.variables["z"][:][:, timestamp][nosurf_indicies] * scale_factor
+    nc.close()
+
+    fig = plt.figure()#figsize=(15, 15))
+    fig.set_facecolor('white')
+
+    ax = plt.axes(projection='3d')
+    ax.set_facecolor('white')
+    ax.set_xlabel("Longitude [m]", fontsize=24, labelpad=40)
+    ax.set_ylabel("Latitude [m]", fontsize=24, labelpad=30)
+    ax.set_zlabel("Depth [m]", fontsize=24, labelpad=30)
+
+    ax.scatter(x, y, z, alpha=0.5, s=0.04, color='blue')
+
+    ax.set_xlim3d(0, 0.6)# 720)
+    ax.set_ylim3d(0, 0.6)# 720)
+    ax.set_zlim3d(0, 0.3)# 360)
+    ax.set_xticks([0, 0.2, 0.4, 0.6])
+    ax.set_yticks([0, 0.2, 0.4, 0.6])
+    ax.set_zticks([0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3])
+    ax.xaxis.set_tick_params(labelsize=22)
+    ax.yaxis.set_tick_params(labelsize=22)
+    ax.zaxis.set_tick_params(labelsize=22, pad=10)
+    ax.xaxis.set_rotate_label(False)
+    ax.yaxis.set_rotate_label(False)
     # plt.subplots_adjust(top=0.9)
 
+    # prettification
+    ax.view_init(elev=5, azim=35)  # view orientation
+    ax.xaxis.pane.fill = False  # prettification
+    ax.yaxis.pane.fill = False
+    ax.zaxis.pane.fill = False
+    ax.xaxis.pane.set_edgecolor('black')
+    ax.yaxis.pane.set_edgecolor('black')
+    ax.zaxis.pane.set_edgecolor('black')
+    ax.grid(False)
+
+    plt.tight_layout()
+    # plt.show()
     fig.savefig(savepath)
 
 
@@ -826,49 +934,6 @@ def plot_polar_angles_superimposed(filepaths, colours, labels, savepath_timeseri
         tick.label.set_fontsize(20)
     fig.savefig(savepath_timeseries)
     plt.close('plt_means')
-
-
-def plot_trajectories(sample, orientations, filepath, savepath=None):
-    from mpl_toolkits.mplot3d import Axes3D
-    import mpl_toolkits.mplot3d.art3d as art3d
-    step = 1
-
-    timestamps = np.arange(0, 300, step)
-    timestamps[0] = 1
-
-    nc = netCDF4.Dataset(filepath + ".nc")
-    x = nc.variables["lon"][:][sample][:, timestamps]
-    y = nc.variables["lat"][:][sample][:, timestamps]
-    z = nc.variables["z"][:][sample][:, timestamps]
-    if orientations:
-        dir_x = nc.variables["dir_x"][:][sample][:, timestamps]
-        dir_y = nc.variables["dir_y"][:][sample][:, timestamps]
-        dir_z = nc.variables["dir_z"][:][sample][:, timestamps]
-    nc.close()
-
-    fig = plt.figure(figsize=(15, 15))
-
-    ax = plt.axes(projection='3d')
-    ax.set_title("Particle Trajectories", fontsize=20)
-    ax.set_xlabel("Longitude", fontsize=20)
-    ax.set_ylabel("Latitude", fontsize=20)
-    ax.set_zlabel("Depth", fontsize=20)
-
-    m = 1
-    for p in tqdm(range(len(sample))):
-        ax.scatter(x[p, 0], y[p, 0], -z[p, 0], 'c', c='k', s=6.0)  # mark start points
-        ax.plot(x[p, :], y[p, :], -z[p, :], 'o', markersize=4)
-        if orientations:
-            ax.quiver(x[p, ::m], y[p, ::m], -z[p, ::m],
-                  dir_x[p, ::m], dir_y[p, ::m], -dir_z[p, ::m],
-                  length=7, color='k')
-
-    # ax.set_xlim3d(0, 720)
-    # ax.set_ylim3d(0, 720)
-    # ax.set_zlim3d(-180, 0)
-    # plt.subplots_adjust(top=0.9)
-
-    fig.savefig(savepath)
 
 
 def animate_directions(p, filepath, savepath=None):
@@ -1105,7 +1170,26 @@ if __name__ == "__main__":
     #     # reformat_for_voronoi(os.path.dirname(file), timesteps)
     #     extract_voronoi_epsilon(filepath=os.path.join(os.path.dirname(file), "vols_d.npy"),
     #                                 epsilon_csv_file='/media/alexander/AKC Passport 2TB/epsilon.csv')
-    fluid_velocity_fields = "/media/alexander/AKC Passport 2TB/everysec/F*n.nc_vort.123"
-    path_to_lonlatdeps = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_100um_initunif_mot"
-    timesteps = np.arange(0, 601, 10)
-    extract_particlewise_fluid_velocities(fluid_velocity_fields, path_to_lonlatdeps, timesteps)
+    # fluid_velocity_fields = "/media/alexander/AKC Passport 2TB/everysec/F*n.nc_vort.123"
+    # path_to_lonlatdeps = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_100um_initunif_mot"
+    # timesteps = np.arange(0, 601, 10)
+    # extract_particlewise_fluid_velocities(fluid_velocity_fields, path_to_lonlatdeps, timesteps)
+
+    # sample = np.random.randint(0, 100000, 3)
+    # colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:brown", "tab:pink", "tab:gray", "tab:olive", "tab:cyan"]
+    # filepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_10um_initunif_mot.nc"
+    # orientation = True
+    # savepath = os.path.join(os.path.dirname(filepath), "pos/pos.png")
+    # timestamp = 270
+    # savepath = "/home/alexander/Desktop/snapshot%d.png" % timestamp
+    # # plot_trajectories(sample, orientation, colors, filepath, savepath)
+    # for timestamp in [250, 260, 270, 280, 290, 300]:
+    #     savepath = "/home/alexander/Desktop/snapshot%d.png" % timestamp
+    #     plot_snapshot(timestamp, filepath, savepath)
+
+    samplesize = 6
+    colors = ["tab:blue", "tab:orange", "tab:green", "tab:purple", "tab:red", "tab:brown", "tab:pink", "tab:gray", "tab:olive", "tab:cyan"]
+    filepath_slow = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_5.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_5.0B_10um_initunif_mot.nc"
+    filepath_agile = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_500um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_500um_initunif_mot.nc"
+    savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/pos/depth_trajectories/sample_depth_trajectories.png"
+    plot_depth_trajectories(samplesize, colors, filepath_slow, filepath_agile, savepath)

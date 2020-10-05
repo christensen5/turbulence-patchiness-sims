@@ -49,17 +49,15 @@ halfstring = "_half" if half_polar is True else ""
 # define depth regions (in cells)
 depth_slices = [[100, 170], [170, 240], [240, 305], [170, 305]]  # deep, mid, shallow, shallow-mid
 
-fig_shallowmid = plt.figure(figsize=(10, 6))
-fig_shallow = plt.figure(figsize=(10, 6))
-fig_mid = plt.figure(figsize=(10, 6))
-fig_deep = plt.figure(figsize=(10, 6))
-
+fig = plt.figure(figsize=(12, 16))
 # Extract particle dir and particlewise fluid velocity for each motile simulation and compute Veff.
 timestamps = np.arange(0, 601, 10)
 timestamps_to_plot = np.arange(20, 61)
-cells_to_m = 1./1200  # conversion factor from cells/s to m/s
+cells_to_m = 1. / 1200  # conversion factor from cells/s to m/s
 print("Conversion factor set to %f - ensure this is correct." % cells_to_m)
 sim_id = 0
+i = 0
+subfiglabels = "adbecf"
 for sim in tqdm([data_v10_B5, data_v500_B1]):
     sim_id += 1
     nc = netCDF4.Dataset(sim["nc"])
@@ -82,7 +80,7 @@ for sim in tqdm([data_v10_B5, data_v500_B1]):
     Veff_v *= cells_to_m
     Veff_w *= cells_to_m
 
-    # plot V_eff distribution over 20-60s of simulation time.
+    # extract V_eff distribution over 20-60s of simulation time.
     Veff_u_t = Veff_u[:, timestamps_to_plot].flatten()
     Veff_v_t = Veff_v[:, timestamps_to_plot].flatten()
     Veff_w_t = Veff_w[:, timestamps_to_plot].flatten()
@@ -111,11 +109,13 @@ for sim in tqdm([data_v10_B5, data_v500_B1]):
     Veff_v_t_deep = Veff_v_t[np.logical_and(depth_slices[0][0] < deps_t, deps_t < depth_slices[0][1])]
     Veff_w_t_deep = Veff_w_t[np.logical_and(depth_slices[0][0] < deps_t, deps_t < depth_slices[0][1])]
 
+    # convert to spherical coords
     r_shallowmid, pol_shallowmid, azi_shallowmid = cart2spher(Veff_u_t_shallowmid, Veff_v_t_shallowmid, Veff_w_t_shallowmid)
     r_shallow, pol_shallow, azi_shallow = cart2spher(Veff_u_t_shallow, Veff_v_t_shallow, Veff_w_t_shallow)
     r_mid, pol_mid, azi_mid = cart2spher(Veff_u_t_mid, Veff_v_t_mid, Veff_w_t_mid)
     r_deep, pol_deep, azi_deep = cart2spher(Veff_u_t_deep, Veff_v_t_deep, Veff_w_t_deep)
 
+    # compute means
     r_avg_shallowmid = np.mean(r_shallowmid)
     r_avg_shallow = np.mean(r_shallow)
     r_avg_mid = np.mean(r_mid)
@@ -130,151 +130,172 @@ for sim in tqdm([data_v10_B5, data_v500_B1]):
         pol_mid = np.multiply(pol_mid, np.sign(azi_mid))  # polar angles with negative azimuthal angle are now negative, otherwise positive.
         pol_deep = np.multiply(pol_deep, np.sign(azi_deep))  # polar angles with negative azimuthal angle are now negative, otherwise positive.
     
-
+    # set up histogram parameters
     n_rbins = 10
     n_polbins = 33#73
     rmax = max(r_shallowmid.max(), r_shallow.max(), r_mid.max(), r_deep.max())
     # rbin_upper = (rmax // 1) + math.ceil(100 * (rmax % 1))/100  # next hundredth after (rmax rounded to 2 decimal places).
-    rbins = np.arange(0, rmax, 0.01)#np.linspace(0, rbin_upper, n_rbins + 1)
+    rbins = np.arange(0, 0.06, 0.01)#np.arange(0, rmax, 0.01)#np.linspace(0, rbin_upper, n_rbins + 1)
     polbins = np.linspace(-np.pi, np.pi, n_polbins + 1)
-
+    # generate histograms
     h_shallowmid, _, _ = np.histogram2d(pol_shallowmid, r_shallowmid, [polbins, rbins], normed=True)
     h_shallow, _, _ = np.histogram2d(pol_shallow, r_shallow, [polbins, rbins], normed=True)
     h_mid, _, _ = np.histogram2d(pol_mid, r_mid, [polbins, rbins], normed=True)
     h_deep, _, _ = np.histogram2d(pol_deep, r_deep, [polbins, rbins], normed=True)
     R, POL = np.meshgrid(rbins, polbins)
 
-    vmax = 9 if not half_polar else 16
-    ax_shallowmid = fig_shallowmid.add_subplot(1, 2, sim_id, projection='polar')
-    cbar_shallowmid = ax_shallowmid.pcolormesh(POL, R, h_shallowmid, cmap='Reds', vmax=vmax)
-    ax_shallowmid.axvline(pol_avg_shallowmid, color='k', lw=1.)
-    ax_shallowmid.axvline(-pol_avg_shallowmid, color='k', lw=1.)
-    if half_polar:
-        ax_shallowmid.annotate(r'$\overline{{\theta}}={:.1f}\degree$'.format(np.rad2deg(pol_avg_shallowmid)), xy=(0.61, 0.55), color='k', xycoords='axes fraction')
-        ax_shallowmid.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000 * r_avg_shallowmid), xy=(0.53, 0.45), color='k', xycoords='axes fraction')
-    else:
-        ax_shallowmid.annotate(r'$\overline{{\theta}}={:.1f}\degree$'.format(np.rad2deg(pol_avg_shallowmid)),
-                               xy=(0.41, 0.55), color='k', xycoords='axes fraction')
-        ax_shallowmid.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000 * r_avg_shallowmid),
-                               xy=(0.33, 0.45), color='k', xycoords='axes fraction')
-    ax_shallowmid.set_title(r"$B = {:1.1f}s^{{-1}}$" "\n" "$v = {:n}\mu m \ s^{{-1}}$".format(sim["B"], sim["V"]), pad=20, fontsize=15)
-    ax_shallowmid.set_xticklabels(['', r'$45\degree$', r'$90\degree$', r'$135\degree$', r'$180\degree$', r'$-135\degree$', '', r'$-45\degree$'])
-    ax_shallowmid.set_ylim([0, 0.06])
-    ax_shallowmid.set_yticks([0, 0.06])
-    ax_shallowmid.set_yticklabels([r'$0mm \ s^{-1}$', r'$60mm \ s^{-1}$'])
-    ax_shallowmid.set_rorigin(-0.06)
-    ax_shallowmid.set_theta_zero_location("N")
-    ax_shallowmid.set_rlabel_position(0)
-    if half_polar:
-        ax_shallowmid.set_thetamin(0)
-        ax_shallowmid.set_thetamax(180)
+    # vmax = 9 if not half_polar else 16
+    # ax_shallowmid = fig_shallowmid.add_subplot(1, 2, sim_id, projection='polar')
+    # cbar_shallowmid = ax_shallowmid.pcolormesh(POL, R, h_shallowmid, cmap='Reds', vmax=vmax)
+    # ax_shallowmid.axvline(pol_avg_shallowmid, color='k', lw=1.)
+    # ax_shallowmid.axvline(-pol_avg_shallowmid, color='k', lw=1.)
+    # if half_polar:
+    #     ax_shallowmid.annotate(r'$\overline{{\theta}}={:.1f}\degree$'.format(np.rad2deg(pol_avg_shallowmid)), xy=(0.61, 0.55), color='k', xycoords='axes fraction')
+    #     ax_shallowmid.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000 * r_avg_shallowmid), xy=(0.53, 0.45), color='k', xycoords='axes fraction')
+    # else:
+    #     ax_shallowmid.annotate(r'$\overline{{\theta}}={:.1f}\degree$'.format(np.rad2deg(pol_avg_shallowmid)),
+    #                            xy=(0.41, 0.55), color='k', xycoords='axes fraction')
+    #     ax_shallowmid.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000 * r_avg_shallowmid),
+    #                            xy=(0.33, 0.45), color='k', xycoords='axes fraction')
+    # ax_shallowmid.set_title(r"$B = {:1.1f}s^{{-1}}$" "\n" "$v = {:n}\mu m \ s^{{-1}}$".format(sim["B"], sim["V"]), pad=20, fontsize=15)
+    # ax_shallowmid.set_xticklabels(['', r'$45\degree$', r'$90\degree$', r'$135\degree$', r'$180\degree$', r'$-135\degree$', '', r'$-45\degree$'])
+    # ax_shallowmid.set_ylim([0, 60])
+    # ax_shallowmid.set_yticks([0, 60])
+    # ax_shallowmid.set_yticklabels([r'$0mm \ s^{-1}$', r'$60mm \ s^{-1}$'])
+    # ax_shallowmid.set_rorigin(-60)
+    # ax_shallowmid.set_theta_zero_location("N")
+    # ax_shallowmid.set_rlabel_position(0)
+    # if half_polar:
+    #     ax_shallowmid.set_thetamin(0)
+    #     ax_shallowmid.set_thetamax(180)
 
     vmax = 9 if not half_polar else 30
-    ax_shallow = fig_shallow.add_subplot(1, 2, sim_id, projection='polar')
+    ax_shallow = fig.add_subplot(3, 2, sim_id, projection='polar')
     cbar_shallow = ax_shallow.pcolormesh(POL, R, h_shallow, cmap='Reds', vmax=vmax)
     ax_shallow.axvline(pol_avg_shallow, color='k', lw=1.)
     ax_shallow.axvline(-pol_avg_shallow, color='k', lw=1.)
+    # label subplot with boldface lowercase letter for NatComms
+    ax_shallow.annotate("ab"[sim_id - 1], xy=(0, 1), color='k', xycoords='axes fraction',
+                                horizontalalignment='left', verticalalignment='top', fontsize=20, fontweight='bold')
+    # label depth region
+    if sim_id == 2:
+            ax_shallow.annotate('Shallow', xy=(1.3, 0.5), color='k', xycoords='axes fraction',
+                                horizontalalignment='center', verticalalignment='center', rotation=270, fontsize=24)
     if half_polar:
         ax_shallow.annotate(r'$\overline{{\theta}}={:.1f}\degree$'.format(np.rad2deg(pol_avg_shallow)),
-                               xy=(0.61, 0.55), color='k', xycoords='axes fraction')
-        ax_shallow.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000 * r_avg_shallow),
-                               xy=(0.53, 0.45), color='k', xycoords='axes fraction')
+                               xy=(0.61, 0.55), color='k', xycoords='axes fraction', fontsize=20)
+        ax_shallow.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000*r_avg_shallow),
+                               xy=(0.53, 0.4), color='k', xycoords='axes fraction', fontsize=20)
     else:
         ax_shallow.annotate(r'$\overline{{\theta}}={:.1f}\degree$'.format(np.rad2deg(pol_avg_shallow)),
                                xy=(0.41, 0.55), color='k', xycoords='axes fraction')
-        ax_shallow.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000 * r_avg_shallow),
+        ax_shallow.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000*r_avg_shallow),
                                xy=(0.33, 0.45), color='k', xycoords='axes fraction')
-    ax_shallow.set_title(r"$B = {:1.1f}s^{{-1}}$" "\n" "$v = {:n}\mu m \ s^{{-1}}$".format(sim["B"], sim["V"]),
-                            pad=20, fontsize=15)
-    ax_shallow.set_xticklabels(
-        ['', r'$45\degree$', r'$90\degree$', r'$135\degree$', r'$180\degree$', r'$-135\degree$', '', r'$-45\degree$'])
-    ax_shallow.set_ylim([0, 0.06])
-    ax_shallow.set_yticks([0, 0.06])
-    ax_shallow.set_yticklabels([r'$0mm \ s^{-1}$', r'$60mm \ s^{-1}$'])
+    # ax_shallow.set_title(r"$B = {:1.1f}s^{{-1}}$" "\n" "$v = {:n}\mu m \ s^{{-1}}$".format(sim["B"], sim["V"]),
+    #                         pad=20, fontsize=25)
+    ax_shallow.set_title(["Non-Agile", "Agile"][sim_id - 1], pad=20, fontsize=28)
     ax_shallow.set_rorigin(-0.06)
     ax_shallow.set_theta_zero_location("N")
     ax_shallow.set_rlabel_position(0)
     if half_polar:
         ax_shallow.set_thetamin(0)
         ax_shallow.set_thetamax(180)
+    ax_shallow.tick_params(axis='x', which='major', labelsize=18, pad=15)
+    ax_shallow.tick_params(axis='y', which='major', labelsize=18)
+    ax_shallow.set_xticks([0, 0.25*np.pi, 0.5*np.pi, 0.75*np.pi, np.pi])
+    ax_shallow.set_xticklabels(['', r'$45\degree$', r'$90\degree$', r'$135\degree$', ''])
+    ax_shallow.set_ylim([0, 0.06])
+    ax_shallow.set_yticks([0, 0.06])
+    ax_shallow.set_yticklabels([r'$0mm \ s^{-1}$', r'$60mm \ s^{-1}$'])
 
-    vmax = 9 if not half_polar else 30
-    ax_mid = fig_mid.add_subplot(1, 2, sim_id, projection='polar')
+    ax_mid = fig.add_subplot(3, 2, 2 + sim_id, projection='polar')
     cbar_mid = ax_mid.pcolormesh(POL, R, h_mid, cmap='Reds', vmax=vmax)
     ax_mid.axvline(pol_avg_mid, color='k', lw=1.)
     ax_mid.axvline(-pol_avg_mid, color='k', lw=1.)
+    # label subplot with boldface lowercase letter for NatComms
+    ax_mid.annotate("cd"[sim_id - 1], xy=(0, 1), color='k', xycoords='axes fraction',
+                        horizontalalignment='left', verticalalignment='top', fontsize=20, fontweight='bold')
+    # label depth region
+    if sim_id == 2:
+            ax_mid.annotate('Mid', xy=(1.3, 0.5), color='k', xycoords='axes fraction',
+                                horizontalalignment='center', verticalalignment='center', rotation=270, fontsize=24)
     if half_polar:
         ax_mid.annotate(r'$\overline{{\theta}}={:.1f}\degree$'.format(np.rad2deg(pol_avg_mid)),
-                               xy=(0.61, 0.55), color='k', xycoords='axes fraction')
-        ax_mid.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000 * r_avg_mid),
-                               xy=(0.53, 0.45), color='k', xycoords='axes fraction')
+                               xy=(0.61, 0.55), color='k', xycoords='axes fraction', fontsize=20)
+        ax_mid.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000*r_avg_mid),
+                               xy=(0.53, 0.4), color='k', xycoords='axes fraction', fontsize=20)
     else:
         ax_mid.annotate(r'$\overline{{\theta}}={:.1f}\degree$'.format(np.rad2deg(pol_avg_mid)),
                                xy=(0.41, 0.55), color='k', xycoords='axes fraction')
-        ax_mid.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000 * r_avg_mid),
+        ax_mid.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000*r_avg_mid),
                                xy=(0.33, 0.45), color='k', xycoords='axes fraction')
-    ax_mid.set_title(r"$B = {:1.1f}s^{{-1}}$" "\n" "$v = {:n}\mu m \ s^{{-1}}$".format(sim["B"], sim["V"]),
-                            pad=20, fontsize=15)
-    ax_mid.set_xticklabels(
-        ['', r'$45\degree$', r'$90\degree$', r'$135\degree$', r'$180\degree$', r'$-135\degree$', '', r'$-45\degree$'])
-    ax_mid.set_ylim([0, 0.06])
-    ax_mid.set_yticks([0, 0.06])
-    ax_mid.set_yticklabels([r'$0mm \ s^{-1}$', r'$60mm \ s^{-1}$'])
+    # ax_mid.set_title(r"$B = {:1.1f}s^{{-1}}$" "\n" "$v = {:n}\mu m \ s^{{-1}}$".format(sim["B"], sim["V"]),
+    #                         pad=20, fontsize=25)
     ax_mid.set_rorigin(-0.06)
     ax_mid.set_theta_zero_location("N")
     ax_mid.set_rlabel_position(0)
     if half_polar:
         ax_mid.set_thetamin(0)
         ax_mid.set_thetamax(180)
+    ax_mid.tick_params(axis='x', which='major', labelsize=18, pad=15)
+    ax_mid.tick_params(axis='y', which='major', labelsize=18)
+    ax_mid.set_xticks([0, 0.25*np.pi, 0.5*np.pi, 0.75*np.pi, np.pi])
+    ax_mid.set_xticklabels(['', r'$45\degree$', r'$90\degree$', r'$135\degree$', ''])
+    ax_mid.set_ylim([0, 0.06])
+    ax_mid.set_yticks([0, 0.06])
+    ax_mid.set_yticklabels([r'$0mm \ s^{-1}$', r'$60mm \ s^{-1}$'])
 
-    vmax = 21 if not half_polar else 30
-    ax_deep = fig_deep.add_subplot(1, 2, sim_id, projection='polar')
+    ax_deep = fig.add_subplot(3, 2, 4 + sim_id, projection='polar')
     cbar_deep = ax_deep.pcolormesh(POL, R, h_deep, cmap='Reds', vmax=vmax)
     ax_deep.axvline(pol_avg_deep, color='k', lw=1.)
     ax_deep.axvline(-pol_avg_deep, color='k', lw=1.)
+    # label subplot with boldface lowercase letter for NatComms
+    ax_deep.annotate("ef"[sim_id - 1], xy=(0, 1), color='k', xycoords='axes fraction',
+                        horizontalalignment='left', verticalalignment='top', fontsize=20, fontweight='bold')
+    # label depth region
+    if sim_id == 2:
+            ax_deep.annotate('Deep', xy=(1.3, 0.5), color='k', xycoords='axes fraction',
+                                horizontalalignment='center', verticalalignment='center', rotation=270, fontsize=24)
     if half_polar:
-        ax_deep.annotate(r'$\overline{{\theta}}={:.1f}\degree$'.format(np.rad2deg(pol_avg_deep)), xy=(0.61, 0.55),
-                         color='k', xycoords='axes fraction')
-        ax_deep.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000 * r_avg_deep), xy=(0.53, 0.45),
-                         color='k', xycoords='axes fraction')
+        ax_deep.annotate(r'$\overline{{\theta}}={:.1f}\degree$'.format(np.rad2deg(pol_avg_deep)),
+                               xy=(0.61, 0.55), color='k', xycoords='axes fraction', fontsize=20)
+        ax_deep.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000*r_avg_deep),
+                               xy=(0.53, 0.4), color='k', xycoords='axes fraction', fontsize=20)
     else:
-        ax_deep.annotate(r'$\overline{{\theta}}={:.1f}\degree$'.format(np.rad2deg(pol_avg_deep)), xy=(0.41, 0.55), color='k', xycoords='axes fraction')
-        ax_deep.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000 * r_avg_deep), xy=(0.33, 0.45), color='k', xycoords='axes fraction')
-    ax_deep.set_title(r"$B = {:1.1f}s^{{-1}}$" "\n" "$v = {:n}\mu m \ s^{{-1}}$".format(sim["B"], sim["V"]), pad=20, fontsize=15)
-    ax_deep.set_xticklabels(
-        ['', r'$45\degree$', r'$90\degree$', r'$135\degree$', r'$180\degree$', r'$-135\degree$', '', r'$-45\degree$'])
-    ax_deep.set_ylim([0, 0.06])
-    ax_deep.set_yticks([0, 0.06])
-    ax_deep.set_yticklabels([r'$0mm \ s^{-1}$', r'$60mm \ s^{-1}$'])
+        ax_deep.annotate(r'$\overline{{\theta}}={:.1f}\degree$'.format(np.rad2deg(pol_avg_deep)),
+                               xy=(0.41, 0.55), color='k', xycoords='axes fraction')
+        ax_deep.annotate(r'$\overline{{V_{{eff}}}}={:.1f} mm \ s^{{-1}}$'.format(1000*r_avg_deep),
+                               xy=(0.33, 0.45), color='k', xycoords='axes fraction')
+    # ax_deep.set_title(r"$B = {:1.1f}s^{{-1}}$" "\n" "$v = {:n}\mu m \ s^{{-1}}$".format(sim["B"], sim["V"]),
+    #                         pad=20, fontsize=25)
     ax_deep.set_rorigin(-0.06)
     ax_deep.set_theta_zero_location("N")
     ax_deep.set_rlabel_position(0)
     if half_polar:
         ax_deep.set_thetamin(0)
         ax_deep.set_thetamax(180)
+    ax_deep.tick_params(axis='x', which='major', labelsize=18, pad=15)
+    ax_deep.tick_params(axis='y', which='major', labelsize=18)
+    ax_deep.set_xticks([0, 0.25*np.pi, 0.5*np.pi, 0.75*np.pi, np.pi])
+    ax_deep.set_xticklabels(['', r'$45\degree$', r'$90\degree$', r'$135\degree$', ''])
+    ax_deep.set_ylim([0, 0.06])
+    ax_deep.set_yticks([0, 0.06])
+    ax_deep.set_yticklabels([r'$0mm \ s^{-1}$', r'$60mm \ s^{-1}$'])
 
-fig_shallowmid.suptitle(r"$V_{eff}$ direction and magnitude in Shallow-Mid regions.", fontsize=20)
-fig_shallowmid.subplots_adjust(top=0.8, right=0.8)
-cbar_ax_shallowmid = fig_shallowmid.add_axes([0.85, 0.20, 0.02, 0.60])
-fig_shallowmid.colorbar(cbar_shallowmid, cax=cbar_ax_shallowmid)
+    i += 1
 
-fig_shallow.suptitle(r"$V_{eff}$ direction and magnitude in Shallow region.", fontsize=20)
-fig_shallow.subplots_adjust(top=0.8, right=0.8)
-cbar_ax_shallow = fig_shallow.add_axes([0.85, 0.20, 0.02, 0.60])
-fig_shallow.colorbar(cbar_shallow, cax=cbar_ax_shallow)
+# fig_shallowmid.suptitle(r"$V_{eff}$ direction and magnitude in Shallow-Mid regions.", fontsize=20)
+# fig_shallowmid.subplots_adjust(top=0.8, right=0.8)
+# cbar_ax_shallowmid = fig_shallowmid.add_axes([0.85, 0.20, 0.02, 0.60])
+# fig_shallowmid.colorbar(cbar_shallowmid, cax=cbar_ax_shallowmid)
+#
+fig.subplots_adjust(top=0.9, left=0.1)
+cbar_ax = fig.add_axes([0.05, 0.1, 0.03, 0.8])
+fig.colorbar(cbar_shallow, cax=cbar_ax)
+cbar_ax.yaxis.set_label_position('left')
+cbar_ax.yaxis.set_ticks_position('left')
+cbar_ax.tick_params(axis='y', which='major', labelsize=18)
 
-fig_mid.suptitle(r"$V_{eff}$ direction and magnitude in Mid region.", fontsize=20)
-fig_mid.subplots_adjust(top=0.8, right=0.8)
-cbar_ax_mid = fig_mid.add_axes([0.85, 0.20, 0.02, 0.60])
-fig_mid.colorbar(cbar_mid, cax=cbar_ax_mid)
 
-fig_deep.suptitle(r"$V_{eff}$ direction and magnitude in Deep region.", fontsize=20)
-fig_deep.subplots_adjust(top=0.8, right=0.8)
-cbar_ax_deep = fig_deep.add_axes([0.85, 0.20, 0.02, 0.60])
-fig_deep.colorbar(cbar_deep, cax=cbar_ax_deep)
-
-fig_shallowmid.savefig('/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/Veff/1x2/100000p_Veff_shallowmid_slowVsAgile_20-60s%s%s.png' % (surfstring, halfstring))
-fig_shallow.savefig('/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/Veff/1x2/100000p_Veff_shallow_slowVsAgile_20-60s%s%s.png' % (surfstring, halfstring))
-fig_mid.savefig('/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/Veff/1x2/100000p_Veff_mid_slowVsAgile_20-60s%s%s.png' % (surfstring, halfstring))
-fig_deep.savefig('/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/Veff/1x2/100000p_Veff_deep_slowVsAgile_20-60s%s%s.png' % (surfstring, halfstring))
-# fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/Veff/100000p_Veff_20-60s%s.png" % (surfstring))
+# plt.show()
+fig.savefig('/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/Veff/3x2/100000p_Veff_slowVsAgile_20-60s%s%s.png' % (surfstring, halfstring))

@@ -41,7 +41,7 @@ for v in variables:
 fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps, time_periodic=time_periodic, interp_method=interp_method, field_chunksize=False)
 
 # Implement field scaling.
-logger.warning_once("Scaling factor set to %f - ensure this is correct." %scale_fact)
+logger.warning_once("Scaling factor set to %f - ensure this is correct." % scale_fact)
 fieldset.U.set_scaling_factor(scale_fact)
 fieldset.V.set_scaling_factor(scale_fact)
 fieldset.W.set_scaling_factor(scale_fact)

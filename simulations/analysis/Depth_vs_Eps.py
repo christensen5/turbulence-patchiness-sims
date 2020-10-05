@@ -121,9 +121,7 @@ epsilon_timestamps = np.unique(epsilon_array[:, 0])  # extract timestamps at whi
 # ax_right.set_ylim(plot.get_ylim())
 # ax_right.set_yticks([0.10, 0.17, 0.24, 0.30])
 # # label depth regions
-# plot.text(3.05e-4, 0.27, "Shallow", horizontalalignment='center', verticalalignment='center', size='16', color='black')
-# plot.text(3.05e-4, 0.205, "Mid", horizontalalignment='center', verticalalignment='center', size='16', color='black')
-# plot.text(3.05e-4, 0.135, "Deep", horizontalalignment='center', verticalalignment='center', size='16', color='black')
+
 # plt.ticklabel_format(style='sci', scilimits=(0, 0), axis='x')
 # plt.subplots_adjust(top=0.9)
 # plot.set_title(r'Fluid DNS turbulent dissipation rate ($\epsilon$) vs depth', fontsize=16)
@@ -137,12 +135,34 @@ xfmt = ScalarFormatter()
 xfmt.set_powerlimits((0, 0))
 xfmt.set_scientific(True)
 points = hv.Points(np.array([epsilon_array[:, 3], epsilon_array[:, 1]]).transpose())
-points.opts(alpha=0.1, s=50,
+text = hv.Text(0.000365, 0.27, text='Shallow', halign='right', valign='center') * \
+        hv.Text(0.000365, 0.205, text='Mid', halign='right', valign='center') * \
+        hv.Text(0.000365, 0.135, text='Deep', halign='right', valign='center')
+hlines = hv.HLine(0.1) * hv.HLine(0.17) * hv.HLine(0.24) * hv.HLine(0.3)
+# points.opts(alpha=0.1, s=50,
+#             xlabel=r"$\epsilon$ [$m^2 s^{-3}$]",
+#             ylabel=r"Depth [m]",
+#             xformatter=xfmt,
+#             xlim=(0, 0.00035),
+#             # fontscale=2.5,
+#             aspect=1,
+#             fig_inches=15,
+#             edgecolors='none')
+# hlines.opts(color=['k']*4,
+#             linewidth=1.,
+#             linestyle=':')
+(points * text * hlines).opts(
+    opts.Points(alpha=0.1, s=50,
             xlabel=r"$\epsilon$ [$m^2 s^{-3}$]",
             ylabel=r"Depth [m]",
             xformatter=xfmt,
-            fontscale=2.5,
+            xlim=(-0.00002, 0.00037),
+            # fontscale=2.5,
             aspect=1,
             fig_inches=11,
-            edgecolors='none')
-hv.save(points, "/home/alexander/Documents/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/DepthsvsEps/DepthvsEps.png")
+            edgecolors='none'),
+    opts.HLine(color='k',
+            linewidth=1.,
+            linestyle=':')
+)
+hv.save(points * text * hlines, "/home/alexander/Documents/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/DepthvsEps/DepthvsEps.png", fmt='svg')

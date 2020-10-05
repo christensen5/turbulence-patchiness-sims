@@ -19,6 +19,6 @@ points.opts(alpha=0.1, s=2,
             aspect=1,
             fig_inches=11,
             edgecolors='none')
-hv.save(points, "/home/alexander/Documents/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/DepthsvsTemps/DepthvsTemps.png")
+hv.save(points, "/home/alexander/Documents/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/DepthvsTemp/DepthvsTemp.png")
 
 

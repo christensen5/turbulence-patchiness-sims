@@ -68,18 +68,30 @@ data_v500_B1['concs'] = np.reciprocal(data_v500_B1['vols'])
 data_v500_B3['concs'] = np.reciprocal(data_v500_B3['vols'])
 data_v500_B5['concs'] = np.reciprocal(data_v500_B5['vols'])
 
+
 all_motile_concentrations = [data_v10_B1, data_v10_B3, data_v10_B5,
                              data_v100_B1, data_v100_B3, data_v100_B5,
                              data_v500_B1, data_v500_B3, data_v500_B5]
 
+agile_motile_concentrations = [data_v100_B3, data_v100_B1,
+                               data_v500_B3, data_v500_B1]
+
+boring_motile_concentrations = [data_v10_B5, data_v10_B3,
+                                data_v100_B5, data_v100_B3]
+
+agile_motile_representatives = [data_v500_B1, data_v500_B3]
+
+boring_motile_representatives = [data_v10_B3, data_v100_B3]
+
 agilest_motile_concentrations = [data_v500_B1, data_v500_B3]
 
-boring_motile_concentration = [data_v100_B3]
+boringest_motile_concentration = [data_v100_B3]
 
 # Set plot types
-plot_3depthsx3allSims = False
+plot_3x3allSims = False
 plot_3depthsx2agilestSims = False
 plot_3depthsx1boringSim = False
+plot_3depthsx2boringVagileSims = False
 plot_violins = True
 
 # ======================================================================================================================
@@ -97,6 +109,7 @@ surfstring = "_nosurf" if nosurf is True else ""
 
 # define depth ranges (in mm) (in ascending order from bottom to surface)
 depth_slices = [[100, 170], [170, 240], [240, 305]]
+depth_slice_names = ["Deep", "Mid", "Shallow"]
 
 timestamps = np.arange(0, 61, 1)#, 30]
 
@@ -141,186 +154,186 @@ for simdata_dict in tqdm(all_motile_concentrations):
 # ======================================================================================================================
 # PLOT Q OVER TIME...
 
-if plot_3depthsx3allSims:
-    #  ...in a grid. Each row will contain plots from a different depth slice. Each column will contain plots
-    # from sims with different swim velocities. Each subplot has Q-values from different B-values superimposed.
+if plot_3x3allSims:
+    #  ...in a grid. Each row will contain plots from sims with different swim velocities. Each column will contain plots
+    # from sims with different reorientation parameters.
 
-    fig = plt.figure(figsize=(24, 12))
+    for i in range(len(depth_slices)):
+        fig = plt.figure(figsize=(20, 16))
+        plt.box(False)
 
-    colours = np.zeros((3, 3))
-    colours[1, :] = np.linspace(0, 1, 3)
+        ax_v10_B1 = plt.subplot(331)
+        ax_v10_B1.set_ylim([-0.8, 1.6])
+        ax_v10_B1.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        l_v10_B1 = ax_v10_B1.plot(timestamps, data_v10_B1["Q"][str(depth_slices[i])], '-o', color='g', linewidth=1.5, markersize=3)
+        Qmean = np.mean(data_v10_B1["Q"][str(depth_slices[i])])
+        mean_v10_B1 = plt.axhline(Qmean, color='g', linestyle=':', linewidth=1, label="mean")
+        ax_v10_B1.text(-0.2, 0.96, 'a', ha='left', va="top", transform=ax_v10_B1.transAxes, fontsize=20, fontweight="bold")
+        ax_v10_B1.text(1.02, (Qmean - ax_v10_B1.get_ylim()[0]) / (ax_v10_B1.get_ylim()[1] - ax_v10_B1.get_ylim()[0]), "{:1.2f}".format(Qmean),
+                color='g',
+                horizontalalignment='left', verticalalignment='center', transform=ax_v10_B1.transAxes, fontsize=20)
+        plt.axhline(0, color='k')
+        ax_v10_B1.set_ylabel("Q", fontsize=25)
+        ax_v10_B1.text(0.5, 1.1, r'B = {:1.1f}s$^{{-1}}$'.format(data_v10_B1["B"]),
+                horizontalalignment='center', verticalalignment='center',
+                transform=ax_v10_B1.transAxes, fontsize=25)
+        ax_v10_B1.text(-0.3, 0.5, 'Vswim = {:d}um'.format(data_v10_B1["V"]),
+                        horizontalalignment='center', verticalalignment='center',
+                        transform=ax_v10_B1.transAxes, fontsize=25, rotation=90)
 
-    plt.box(False)
+        ax_v10_B3 = plt.subplot(332)
+        ax_v10_B3.set_ylim([-0.8, 1.6])
+        ax_v10_B3.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        l_v10_B3 = ax_v10_B3.plot(timestamps, data_v10_B3["Q"][str(depth_slices[i])], '-o', color='g',
+                                  linewidth=1.5, markersize=3)
+        Qmean = np.mean(data_v10_B3["Q"][str(depth_slices[i])])
+        mean_v10_B3 = plt.axhline(Qmean, color='g', linestyle=':', linewidth=1, label="mean")
+        ax_v10_B3.text(-0.2, 0.96, 'b', ha='left', va="top", transform=ax_v10_B3.transAxes, fontsize=20, fontweight="bold")
+        ax_v10_B3.text(0.5, 1.1, r'B = {:1.1f}s$^{{-1}}$'.format(data_v10_B3["B"]),
+                       horizontalalignment='center', verticalalignment='center',
+                       transform=ax_v10_B3.transAxes, fontsize=25)
+        ax_v10_B3.text(1.02, (Qmean - ax_v10_B3.get_ylim()[0]) / (ax_v10_B3.get_ylim()[1] - ax_v10_B3.get_ylim()[0]),
+                       "{:1.2f}".format(Qmean),
+                       color='g',
+                       horizontalalignment='left', verticalalignment='center', transform=ax_v10_B3.transAxes,
+                       fontsize=20)
+        plt.axhline(0, color='k')
+
+        ax_v10_B5 = plt.subplot(333)
+        ax_v10_B5.set_ylim([-0.8, 1.6])
+        ax_v10_B5.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        l_v10_B5 = ax_v10_B5.plot(timestamps, data_v10_B5["Q"][str(depth_slices[i])], '-o', color='g',
+                                  linewidth=1.5, markersize=3)
+        Qmean = np.mean(data_v10_B5["Q"][str(depth_slices[i])])
+        mean_v10_B5 = plt.axhline(Qmean, color='g', linestyle=':', linewidth=1, label="mean")
+        ax_v10_B5.text(-0.2, 0.96, 'c', ha='left', va="top", transform=ax_v10_B5.transAxes, fontsize=20, fontweight="bold")
+        ax_v10_B5.text(0.5, 1.1, r'B = {:1.1f}s$^{{-1}}$'.format(data_v10_B5["B"]),
+                       horizontalalignment='center', verticalalignment='center',
+                       transform=ax_v10_B5.transAxes, fontsize=25)
+        ax_v10_B5.text(1.02, (Qmean - ax_v10_B5.get_ylim()[0]) / (ax_v10_B5.get_ylim()[1] - ax_v10_B5.get_ylim()[0]),
+                       "{:1.2f}".format(Qmean),
+                       color='g',
+                       horizontalalignment='left', verticalalignment='center', transform=ax_v10_B5.transAxes,
+                       fontsize=20)
+        plt.axhline(0, color='k')
+
+        ax_v100_B1 = plt.subplot(334)
+        ax_v100_B1.set_ylim([-0.8, 1.6])
+        ax_v100_B1.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        l_v100_B1 = ax_v100_B1.plot(timestamps, data_v100_B1["Q"][str(depth_slices[i])], '-o', color='g', linewidth=1.5, markersize=3, label='B=1.0')
+        Qmean = np.mean(data_v100_B1["Q"][str(depth_slices[i])])
+        mean_v100_B1 = plt.axhline(Qmean, color='g', linestyle=':', linewidth=1, label="mean")
+        ax_v100_B1.text(-0.2, 0.96, 'd', ha='left', va="top", transform=ax_v100_B1.transAxes, fontsize=20, fontweight="bold")
+        ax_v100_B1.text(1.02, (Qmean - ax_v100_B1.get_ylim()[0]) / (ax_v100_B1.get_ylim()[1] - ax_v100_B1.get_ylim()[0]),
+                       "{:1.2f}".format(Qmean),
+                       color='g',
+                       horizontalalignment='left', verticalalignment='center', transform=ax_v100_B1.transAxes,
+                       fontsize=20)
+        plt.axhline(0, color='k')
+        ax_v100_B1.set_ylabel("Q", fontsize=25)
+        ax_v100_B1.text(-0.3, 0.5, 'Vswim = {:d}um'.format(data_v100_B1["V"]),
+                        horizontalalignment='center', verticalalignment='center',
+                        transform=ax_v100_B1.transAxes, fontsize=25, rotation=90)
+
+        ax_v100_B3 = plt.subplot(335)
+        ax_v100_B3.set_ylim([-0.8, 1.6])
+        ax_v100_B3.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        l_v100_B3 = ax_v100_B3.plot(timestamps, data_v100_B3["Q"][str(depth_slices[i])], '-o', color='g',
+                                    linewidth=1.5, markersize=3, label='B=1.0')
+        Qmean = np.mean(data_v100_B3["Q"][str(depth_slices[i])])
+        mean_v100_B3 = plt.axhline(Qmean, color='g', linestyle=':', linewidth=1, label="mean")
+        ax_v100_B3.text(-0.2, 0.96, 'e', ha='left', va="top", transform=ax_v100_B3.transAxes, fontsize=20, fontweight="bold")
+        ax_v100_B3.text(1.02,
+                        (Qmean - ax_v100_B3.get_ylim()[0]) / (ax_v100_B3.get_ylim()[1] - ax_v100_B3.get_ylim()[0]),
+                        "{:1.2f}".format(Qmean),
+                        color='g',
+                        horizontalalignment='left', verticalalignment='center', transform=ax_v100_B3.transAxes,
+                        fontsize=20)
+        plt.axhline(0, color='k')
+
+        ax_v100_B5 = plt.subplot(336)
+        ax_v100_B5.set_ylim([-0.8, 1.6])
+        ax_v100_B5.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        l_v100_B5 = ax_v100_B5.plot(timestamps, data_v100_B5["Q"][str(depth_slices[i])], '-o', color='g',
+                                    linewidth=1.5, markersize=3, label='B=1.0')
+        Qmean = np.mean(data_v100_B5["Q"][str(depth_slices[i])])
+        mean_v100_B5 = plt.axhline(Qmean, color='g', linestyle=':', linewidth=1, label="mean")
+        ax_v100_B5.text(-0.2, 0.96, 'f', ha='left', va="top", transform=ax_v100_B5.transAxes, fontsize=20, fontweight="bold")
+        ax_v100_B5.text(1.02,
+                        (Qmean - ax_v100_B5.get_ylim()[0]) / (ax_v100_B5.get_ylim()[1] - ax_v100_B5.get_ylim()[0]),
+                        "{:1.2f}".format(Qmean),
+                        color='g',
+                        horizontalalignment='left', verticalalignment='center', transform=ax_v100_B5.transAxes,
+                        fontsize=20)
+        plt.axhline(0, color='k')
+
+        ax_v500_B1 = plt.subplot(337)
+        ax_v500_B1.set_ylim([-0.8, 1.6])
+        ax_v500_B1.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        l_v500_B1 = ax_v500_B1.plot(timestamps, data_v500_B1["Q"][str(depth_slices[i])], '-o', color='g', linewidth=1.5, markersize=3, label='B=1.0')
+        Qmean = np.mean(data_v500_B1["Q"][str(depth_slices[i])])
+        mean_v500_B1 = plt.axhline(Qmean, color='g', linestyle=':', linewidth=1, label="mean")
+        ax_v500_B1.text(-0.2, 0.96, 'g', ha='left', va="top", transform=ax_v500_B1.transAxes, fontsize=20, fontweight="bold")
+        ax_v500_B1.text(1.02,
+                        (Qmean - ax_v500_B1.get_ylim()[0]) / (ax_v500_B1.get_ylim()[1] - ax_v500_B1.get_ylim()[0]),
+                        "{:1.2f}".format(Qmean),
+                        color='g',
+                        horizontalalignment='left', verticalalignment='center', transform=ax_v500_B1.transAxes,
+                        fontsize=20)
+        plt.axhline(0, color='k')
+        ax_v500_B1.set_ylabel("Q", fontsize=25)
+        ax_v500_B1.text(-0.3, 0.5, 'Vswim = {:d}um'.format(data_v500_B1["V"]),
+                horizontalalignment='center', verticalalignment='center',
+                transform=ax_v500_B1.transAxes, fontsize=25, rotation=90)
+
+        ax_v500_B3 = plt.subplot(338)
+        ax_v500_B3.set_ylim([-0.8, 1.6])
+        ax_v500_B3.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        l_v500_B3 = ax_v500_B3.plot(timestamps, data_v500_B3["Q"][str(depth_slices[i])], '-o', color='g',
+                                    linewidth=1.5, markersize=3, label='B=1.0')
+        Qmean = np.mean(data_v500_B3["Q"][str(depth_slices[i])])
+        mean_v500_B3 = plt.axhline(Qmean, color='g', linestyle=':', linewidth=1, label="mean")
+        ax_v500_B3.text(-0.2, 0.96, 'h', ha='left', va="top", transform=ax_v500_B3.transAxes, fontsize=20, fontweight="bold")
+        ax_v500_B3.text(1.02,
+                        (Qmean - ax_v500_B3.get_ylim()[0]) / (ax_v500_B3.get_ylim()[1] - ax_v500_B3.get_ylim()[0]),
+                        "{:1.2f}".format(Qmean),
+                        color='g',
+                        horizontalalignment='left', verticalalignment='center', transform=ax_v500_B3.transAxes,
+                        fontsize=20)
+        plt.axhline(0, color='k')
+
+        ax_v500_B5 = plt.subplot(339)
+        ax_v500_B5.set_ylim([-0.8, 1.6])
+        ax_v500_B5.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        l_v500_B5 = ax_v500_B5.plot(timestamps, data_v500_B5["Q"][str(depth_slices[i])], '-o', color='g',
+                                    linewidth=1.5, markersize=3, label='B=1.0')
+        Qmean = np.mean(data_v500_B5["Q"][str(depth_slices[i])])
+        mean_v500_B5 = plt.axhline(Qmean, color='g', linestyle=':', linewidth=1, label="mean")
+        ax_v500_B5.text(-0.2, 0.96, 'i', ha='left', va="top", transform=ax_v500_B5.transAxes, fontsize=20, fontweight="bold")
+        ax_v500_B5.text(1.02,
+                        (Qmean - ax_v500_B5.get_ylim()[0]) / (ax_v500_B5.get_ylim()[1] - ax_v500_B5.get_ylim()[0]),
+                        "{:1.2f}".format(Qmean),
+                        color='g',
+                        horizontalalignment='left', verticalalignment='center', transform=ax_v500_B5.transAxes,
+                        fontsize=20)
+        plt.axhline(0, color='k')
+
+        for subplt in [ax_v10_B1, ax_v10_B3, ax_v10_B5,
+                       ax_v100_B1, ax_v100_B3, ax_v100_B5,
+                       ax_v500_B1, ax_v500_B3, ax_v500_B5]:
+            for tick in subplt.xaxis.get_major_ticks():
+                tick.label.set_fontsize(20)
+            for tick in subplt.yaxis.get_major_ticks():
+                tick.label.set_fontsize(20)
 
 
-    # top depth slice ======================================================================================================
-    ax_B1_Dtop = plt.subplot(331)
-    l_B1_Dtop = ax_B1_Dtop.plot(timestamps, data_v10_B1["Q"][str(depth_slices[-1])], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0')
-    l_v10_B3_Dtop = ax_B1_Dtop.plot(timestamps, data_v10_B3["Q"][str(depth_slices[-1])], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0')
-    l_v10_B5_Dtop = ax_B1_Dtop.plot(timestamps, data_v10_B5["Q"][str(depth_slices[-1])], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0')
-    mean_v10_B1_Dtop = plt.axhline(np.mean(data_v10_B1["Q"][str(depth_slices[-1])]), color=colours[:, 0], linestyle=':', linewidth=1, label="mean")
-    mean_v10_B3_Dtop = plt.axhline(np.mean(data_v10_B3["Q"][str(depth_slices[-1])]), color=colours[:, 1], linestyle=':', linewidth=1, label="mean")
-    mean_v10_B5_Dtop = plt.axhline(np.mean(data_v10_B5["Q"][str(depth_slices[-1])]), color=colours[:, 2], linestyle=':', linewidth=1, label="mean")
-    plt.axhline(0, color='k')
-    ax_B1_Dtop.set_title("v = 10um", fontsize=20)
-    ax_B1_Dtop.set_ylabel("Q", fontsize=25)
-    for tick in ax_B1_Dtop.xaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-    for tick in ax_B1_Dtop.yaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-    ax_B1_Dtop.legend(loc="lower left", ncol=2, columnspacing=1., bbox_to_anchor=[0, 1.15], fontsize=15)
-
-    ax_v100_Dtop = plt.subplot(332)
-    l_v100_B1_Dtop = ax_v100_Dtop.plot(timestamps, data_v100_B1["Q"][str(depth_slices[-1])], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0')
-    l_v100_B3_Dtop = ax_v100_Dtop.plot(timestamps, data_v100_B3["Q"][str(depth_slices[-1])], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0')
-    l_v100_B5_Dtop = ax_v100_Dtop.plot(timestamps, data_v100_B5["Q"][str(depth_slices[-1])], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0')
-    mean_v100_B1_Dtop = plt.axhline(np.mean(data_v100_B1["Q"][str(depth_slices[-1])]), color=colours[:, 0], linestyle=':', linewidth=1)
-    mean_v100_B3_Dtop = plt.axhline(np.mean(data_v100_B3["Q"][str(depth_slices[-1])]), color=colours[:, 1], linestyle=':', linewidth=1)
-    mean_v100_B5_Dtop = plt.axhline(np.mean(data_v100_B5["Q"][str(depth_slices[-1])]), color=colours[:, 2], linestyle=':', linewidth=1)
-    plt.axhline(0, color='k')
-    ax_v100_Dtop.set_title("v = 100um", fontsize=20)
-    for tick in ax_v100_Dtop.xaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-    for tick in ax_v100_Dtop.yaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-
-    ax_v500_Dtop = plt.subplot(333)
-    l_v500_B1_Dtop = ax_v500_Dtop.plot(timestamps, data_v500_B1["Q"][str(depth_slices[-1])], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0')
-    l_v500_B3_Dtop = ax_v500_Dtop.plot(timestamps, data_v500_B3["Q"][str(depth_slices[-1])], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0')
-    l_v500_B5_Dtop = ax_v500_Dtop.plot(timestamps, data_v500_B5["Q"][str(depth_slices[-1])], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0')
-    mean_v500_B1_Dtop = plt.axhline(np.mean(data_v500_B1["Q"][str(depth_slices[-1])]), color=colours[:, 0], linestyle=':', linewidth=1)
-    mean_v500_B3_Dtop = plt.axhline(np.mean(data_v500_B3["Q"][str(depth_slices[-1])]), color=colours[:, 1], linestyle=':', linewidth=1)
-    mean_v500_B5_Dtop = plt.axhline(np.mean(data_v500_B5["Q"][str(depth_slices[-1])]), color=colours[:, 2], linestyle=':', linewidth=1)
-    plt.axhline(0, color='k')
-    ax_v500_Dtop.set_title("v = 500um", fontsize=20)
-    ax_v500_Dtop_twin = ax_v500_Dtop.twinx()
-    ax_v500_Dtop_twin.set_yticks([], [])
-    ax_v500_Dtop_twin.set_ylabel("Shallow", fontsize=25, rotation=90)
-    for tick in ax_v500_Dtop.xaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-    for tick in ax_v500_Dtop.yaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-
-    # equalise ylims along rows (i.e. within depth slices)
-    if nosurf:  # don't equalise for shallow particles when nosurf=False
-        row_ylim = (min([subplt.get_ylim()[0] for subplt in [ax_B1_Dtop, ax_v100_Dtop, ax_v500_Dtop]]),
-                    max([subplt.get_ylim()[1] for subplt in [ax_B1_Dtop, ax_v100_Dtop, ax_v500_Dtop]]))
-        for subplt in [ax_B1_Dtop, ax_v100_Dtop, ax_v500_Dtop]:
-            subplt.set_ylim(row_ylim)
-
-
-    # mid depth slice ======================================================================================================
-    ax_v10_Dmid = plt.subplot(334)
-    l_v10_B1_Dmid = ax_v10_Dmid.plot(timestamps, data_v10_B1["Q"][str(depth_slices[1])], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0')
-    l_v10_B3_Dmid = ax_v10_Dmid.plot(timestamps, data_v10_B3["Q"][str(depth_slices[1])], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0')
-    l_v10_B5_Dmid = ax_v10_Dmid.plot(timestamps, data_v10_B5["Q"][str(depth_slices[1])], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0')
-    mean_v10_B1_Dmid = plt.axhline(np.mean(data_v10_B1["Q"][str(depth_slices[1])]), color=colours[:, 0], linestyle=':', linewidth=1)
-    mean_v10_B3_Dmid = plt.axhline(np.mean(data_v10_B3["Q"][str(depth_slices[1])]), color=colours[:, 1], linestyle=':', linewidth=1)
-    mean_v10_B5_Dmid = plt.axhline(np.mean(data_v10_B5["Q"][str(depth_slices[1])]), color=colours[:, 2], linestyle=':', linewidth=1)
-    plt.axhline(0, color='k')
-    ax_v10_Dmid.set_ylabel("Q", fontsize=25)
-    for tick in ax_v10_Dmid.xaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-    for tick in ax_v10_Dmid.yaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-
-    ax_v100_Dmid = plt.subplot(335)
-    l_v100_B1_Dmid = ax_v100_Dmid.plot(timestamps, data_v100_B1["Q"][str(depth_slices[1])], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0')
-    l_v100_B3_Dmid = ax_v100_Dmid.plot(timestamps, data_v100_B3["Q"][str(depth_slices[1])], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0')
-    l_v100_B5_Dmid = ax_v100_Dmid.plot(timestamps, data_v100_B5["Q"][str(depth_slices[1])], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0')
-    mean_v100_B1_Dmid = plt.axhline(np.mean(data_v100_B1["Q"][str(depth_slices[1])]), color=colours[:, 0], linestyle=':', linewidth=1)
-    mean_v100_B3_Dmid = plt.axhline(np.mean(data_v100_B3["Q"][str(depth_slices[1])]), color=colours[:, 1], linestyle=':', linewidth=1)
-    mean_v100_B5_Dmid = plt.axhline(np.mean(data_v100_B5["Q"][str(depth_slices[1])]), color=colours[:, 2], linestyle=':', linewidth=1)
-    plt.axhline(0, color='k')
-    for tick in ax_v100_Dmid.xaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-    for tick in ax_v100_Dmid.yaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-
-    ax_v500_Dmid = plt.subplot(336)
-    l_v500_B1_Dmid = ax_v500_Dmid.plot(timestamps, data_v500_B1["Q"][str(depth_slices[1])], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0')
-    l_v500_B3_Dmid = ax_v500_Dmid.plot(timestamps, data_v500_B3["Q"][str(depth_slices[1])], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0')
-    l_v500_B5_Dmid = ax_v500_Dmid.plot(timestamps, data_v500_B5["Q"][str(depth_slices[1])], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0')
-    mean_v500_B1_Dmid = plt.axhline(np.mean(data_v500_B1["Q"][str(depth_slices[1])]), color=colours[:, 0], linestyle=':', linewidth=1)
-    mean_v500_B3_Dmid = plt.axhline(np.mean(data_v500_B3["Q"][str(depth_slices[1])]), color=colours[:, 1], linestyle=':', linewidth=1)
-    mean_v500_B5_Dmid = plt.axhline(np.mean(data_v500_B5["Q"][str(depth_slices[1])]), color=colours[:, 2], linestyle=':', linewidth=1)
-    plt.axhline(0, color='k')
-    ax_v500_Dmid_twin = ax_v500_Dmid.twinx()
-    ax_v500_Dmid_twin.set_yticks([], [])
-    ax_v500_Dmid_twin.set_ylabel("Mid", fontsize=25, rotation=90)
-    for tick in ax_v500_Dmid.xaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-    for tick in ax_v500_Dmid.yaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-
-    # equalise ylims along rows (i.e. within depth slices)
-    row_ylim = (min([subplt.get_ylim()[0] for subplt in [ax_v10_Dmid, ax_v100_Dmid, ax_v500_Dmid]]),
-                max([subplt.get_ylim()[1] for subplt in [ax_v10_Dmid, ax_v100_Dmid, ax_v500_Dmid]]))
-    for subplt in [ax_v10_Dmid, ax_v100_Dmid, ax_v500_Dmid]:
-        subplt.set_ylim(row_ylim)
-
-    # bottom depth slice ===================================================================================================
-    ax_v10_Dlow = plt.subplot(337)
-    l_v10_B1_Dlow = ax_v10_Dlow.plot(timestamps, data_v10_B1["Q"][str(depth_slices[0])], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0')
-    l_v10_B3_Dlow = ax_v10_Dlow.plot(timestamps, data_v10_B3["Q"][str(depth_slices[0])], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0')
-    l_v10_B5_Dlow = ax_v10_Dlow.plot(timestamps, data_v10_B5["Q"][str(depth_slices[0])], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0')
-    mean_v10_B1_Dlow = plt.axhline(np.mean(data_v10_B1["Q"][str(depth_slices[0])]), color=colours[:, 0], linestyle=':', linewidth=1)
-    mean_v10_B3_Dlow = plt.axhline(np.mean(data_v10_B3["Q"][str(depth_slices[0])]), color=colours[:, 1], linestyle=':', linewidth=1)
-    mean_v10_B5_Dlow = plt.axhline(np.mean(data_v10_B5["Q"][str(depth_slices[0])]), color=colours[:, 2], linestyle=':', linewidth=1)
-    plt.axhline(0, color='k')
-    ax_v10_Dlow.set_xlabel("Time", fontsize=25)
-    ax_v10_Dlow.set_ylabel("Q", fontsize=25)
-    for tick in ax_v10_Dlow.xaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-    for tick in ax_v10_Dlow.yaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-
-    ax_v100_Dlow = plt.subplot(338)
-    l_v100_B1_Dlow = ax_v100_Dlow.plot(timestamps, data_v100_B1["Q"][str(depth_slices[0])], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0')
-    l_v100_B3_Dlow = ax_v100_Dlow.plot(timestamps, data_v100_B3["Q"][str(depth_slices[0])], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0')
-    l_v100_B5_Dlow = ax_v100_Dlow.plot(timestamps, data_v100_B5["Q"][str(depth_slices[0])], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0')
-    mean_v100_B1_Dlow = plt.axhline(np.mean(data_v100_B1["Q"][str(depth_slices[0])]), color=colours[:, 0], linestyle=':', linewidth=1)
-    mean_v100_B3_Dlow = plt.axhline(np.mean(data_v100_B3["Q"][str(depth_slices[0])]), color=colours[:, 1], linestyle=':', linewidth=1)
-    mean_v100_B5_Dlow = plt.axhline(np.mean(data_v100_B5["Q"][str(depth_slices[0])]), color=colours[:, 2], linestyle=':', linewidth=1)
-    plt.axhline(0, color='k')
-    ax_v100_Dlow.set_xlabel("Time", fontsize=25)
-    for tick in ax_v100_Dlow.xaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-    for tick in ax_v100_Dlow.yaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-
-    ax_v500_Dlow = plt.subplot(339)
-    l_v500_B1_Dlow = ax_v500_Dlow.plot(timestamps, data_v500_B1["Q"][str(depth_slices[0])], '-o', color=colours[:, 0], linewidth=1.5, markersize=3, label='B=1.0')
-    l_v500_B3_Dlow = ax_v500_Dlow.plot(timestamps, data_v500_B3["Q"][str(depth_slices[0])], '-o', color=colours[:, 1], linewidth=1.5, markersize=3, label='B=3.0')
-    l_v500_B5_Dlow = ax_v500_Dlow.plot(timestamps, data_v500_B5["Q"][str(depth_slices[0])], '-o', color=colours[:, 2], linewidth=1.5, markersize=3, label='B=5.0')
-    mean_v500_B1_Dlow = plt.axhline(np.mean(data_v500_B1["Q"][str(depth_slices[0])]), color=colours[:, 0], linestyle=':', linewidth=1)
-    mean_v500_B3_Dlow = plt.axhline(np.mean(data_v500_B3["Q"][str(depth_slices[0])]), color=colours[:, 1], linestyle=':', linewidth=1)
-    mean_v500_B5_Dlow = plt.axhline(np.mean(data_v500_B5["Q"][str(depth_slices[0])]), color=colours[:, 2], linestyle=':', linewidth=1)
-    plt.axhline(0, color='k')
-    ax_v500_Dlow.set_xlabel("Time", fontsize=25)
-    ax_v500_Dlow_twin = ax_v500_Dlow.twinx()
-    ax_v500_Dlow_twin.set_yticks([], [])
-    ax_v500_Dlow_twin.set_ylabel("Deep", fontsize=25, rotation=90)
-    for tick in ax_v500_Dlow.xaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-    for tick in ax_v500_Dlow.yaxis.get_major_ticks():
-            tick.label.set_fontsize(20)
-
-    # equalise ylims along rows (i.e. within depth slices)
-    row_ylim = (min([subplt.get_ylim()[0] for subplt in [ax_v10_Dlow, ax_v100_Dlow, ax_v500_Dlow]]),
-                max([subplt.get_ylim()[1] for subplt in [ax_v10_Dlow, ax_v100_Dlow, ax_v500_Dlow]]))
-    for subplt in [ax_v10_Dlow, ax_v100_Dlow, ax_v500_Dlow]:
-        subplt.set_ylim(row_ylim)
-
-
-    if nosurf:
-        st = fig.suptitle("Q statistic over time (excluding surface particles) (f=%0.2f)" % f, fontsize=25)
-    else:
-        st = fig.suptitle("Q statistic over time (including surface particles) (f=%0.2f)" % f, fontsize=25)
-    fig.subplots_adjust(top=0.88)
-    # plt.show()
-    fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/Q/Qovertime_vs_Depth/3x3allSims/100000p_%0.2ff_Q_overtime_vs_Depth_%s%s.png" % (f, avg_func.__name__, surfstring),
-                bbox_inches='tight')
+        # st = fig.suptitle("Q statistic over time (%s region) (f=%0.2f)" % (depth_slice_names[i], f), fontsize=28)
+        st = fig.suptitle("%s" % (depth_slice_names[i]), fontsize=28)
+        fig.tight_layout(pad=0.7)
+        fig.subplots_adjust(top=0.88)
+        # plt.show()
+        fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/Q/Qovertime_vs_Depth/3x3allSims/separated depth regions/100000p_%0.2ff_Q_overtime_vs_Depth_%s_%s%s.png" % (f, depth_slice_names[i], avg_func.__name__, surfstring),
+                    bbox_inches='tight')
 
 
 if plot_3depthsx2agilestSims:
@@ -492,7 +505,7 @@ if plot_3depthsx1boringSim:
     # top depth slice ======================================================================================================
     plot_letter = '_abcdefghi'  # for labelling subplots
     plot_index = 311  # for indexing subplots
-    for sim in boring_motile_concentration:
+    for sim in boringest_motile_concentration:
         ax_shallow = plt.subplot(plot_index)
         # set axis limits and tick locations
         if f == 0.1:
@@ -534,7 +547,7 @@ if plot_3depthsx1boringSim:
     # mid depth slice ======================================================================================================
     plot_letter = '_abcdefghi'  # for labelling subplots
     plot_index = 312  # for indexing subplots
-    for sim in boring_motile_concentration:
+    for sim in boringest_motile_concentration:
         ax_mid = plt.subplot(plot_index)
         # set axis limits and tick locations
         if f == 0.1:
@@ -573,7 +586,7 @@ if plot_3depthsx1boringSim:
     # Deep depth slice ======================================================================================================
     plot_letter = '_abcdefghi'  # for labelling subplots
     plot_index = 313  # for indexing subplots
-    for sim in boring_motile_concentration:
+    for sim in boringest_motile_concentration:
         ax_deep = plt.subplot(plot_index)
         # set axis limits and tick locations
         if f == 0.1:
@@ -619,56 +632,338 @@ if plot_3depthsx1boringSim:
         f, avg_func.__name__, surfstring))
 
 
-# if plot_violins:
-nonAgileSims = [data_v10_B1, data_v10_B3, data_v10_B5, data_v100_B3, data_v100_B5]
-agileSims = [data_v100_B1, data_v500_B1, data_v500_B3]
-nonAgileViolinData = [np.concatenate([np.concatenate([sim['Q'][str(depth_slices[2])] for sim in nonAgileSims]), np.concatenate([sim['Q'][str(depth_slices[1])] for sim in nonAgileSims])]),
-                      np.concatenate([sim['Q'][str(depth_slices[0])] for sim in nonAgileSims])]  # deep nonagile
-agileViolinData = [np.concatenate([np.concatenate([sim['Q'][str(depth_slices[2])] for sim in agileSims]), np.concatenate([sim['Q'][str(depth_slices[1])] for sim in agileSims])]),
-                   np.concatenate([sim['Q'][str(depth_slices[0])] for sim in agileSims])]  # deep agile
-# xlabels = ["Shallow+Mid\nSlow", "Shallow+Mid\nAgile", "Deep\nSlow", "Deep\nAgile"]
-ylabels = ["Deep\nAgile", "Deep\nSlow", "Shallow+Mid\nAgile", "Shallow+Mid\nSlow"]
+if plot_3depthsx2boringVagileSims:
+    # ...in a grid. Each row will contain plots from a different depth slice. Left column will contain plots
+    # from non-agile sims, right column will contain plots from agile sims.
 
-plt.clf()
-fig = plt.figure(figsize=(19, 15))
-ax = plt.gca()
-nonAgileViolins = ax.violinplot(nonAgileViolinData, positions=[4, 2], vert=False, showextrema=False, showmeans=False)
-agileViolins = ax.violinplot(agileViolinData, positions=[3, 1], vert=False, showextrema=False, showmeans=False)
-for b in nonAgileViolins['bodies']:
-    b.set_facecolor('#d6604d')
-    b.set_alpha(1)
-for b in agileViolins['bodies']:
-    b.set_facecolor('#4393c3')
-    b.set_alpha(1)
-# means = [np.mean(x) for x in [nonAgileViolinData[0], agileViolinData[0], nonAgileViolinData[1], agileViolinData[1]]]
-means = [np.mean(x) for x in [agileViolinData[1], nonAgileViolinData[1], agileViolinData[0], nonAgileViolinData[0]]]
-ax.vlines(0, ymin=ax.get_ylim()[0], ymax=ax.get_ylim()[1], colors='k', lw=1, linestyles="dashed")
-ax.vlines(means, ymin=[0.5, 1.5, 2.5, 3.5], ymax=[1.5, 2.5, 3.5, 4.5], colors='white', lw=2)
-ax.text(means[0]+0.01, 1, r'$\overline{{Q}}={:1.2f}$'.format(means[0]), color='white', fontsize=16,
-        horizontalalignment="left", verticalalignment="top")
-ax.text(means[1]+0.01, 2, r'$\overline{{Q}}={:1.2f}$'.format(means[1]), color='white', fontsize=16,
-        horizontalalignment="left", verticalalignment="top")
-ax.text(means[2]-0.01, 3, r'$\overline{{Q}}={:1.2f}$'.format(means[2]), color='white', fontsize=16,
-        horizontalalignment="right", verticalalignment="center")
-ax.text(means[3]-0.01, 4, r'$\overline{{Q}}={:1.2f}$'.format(means[3]), color='white', fontsize=16,
-        horizontalalignment="right", verticalalignment="center")
-ax.set_yticks([1, 2, 3, 4])
-ax.set_yticklabels(ylabels)
-for tick in ax.xaxis.get_major_ticks():
-    tick.label.set_fontsize(20)
-for tick in ax.yaxis.get_major_ticks():
-    tick.label.set_fontsize(20)
-ax.set_ylabel("Sample Type", fontsize=24)
-ax.set_xlabel("Q", fontsize=24)
-legend_patches = [mpatches.Patch(color='#d6604d'), mpatches.Patch(color='#4393c3')]
-legend_labels = ["Slow", "Agile"]
-ax.legend(legend_patches, legend_labels, fontsize=20, loc="center right")
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
-ax.spines['bottom'].set_color('black')
-ax.spines['left'].set_color('black')
+    fig = plt.figure(figsize=(20, 16))
 
-# plt.show()
-fig.savefig(
-        "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/Q/violins/100000p_%0.2ff_violin_%s%s.png" % (
-        f, avg_func.__name__, surfstring))
+    # if nosurf:
+    #     st = fig.suptitle("Q statistic over time (excluding surface layer) (f=%0.2f)" % f, fontsize=32)
+    # else:
+    #     st = fig.suptitle("Q statistic over time (including surface layer) (f=%0.2f)" % f, fontsize=32)
+
+    colour = ['tab:blue', 'tab:orange', 'tab:green', 'c']
+    colour_boring = ['tab:red', 'tab:purple'] #[[1, 0.5, 0.5], [1, 0, 0]]
+    colour_agile = ['tab:blue', 'tab:orange'] #[[0.5, 0.5, 1], [0, 0, 1]]
+
+    # top depth slice ======================================================================================================
+    plot_letter = '_abcdefghi'  # for labelling subplots
+    plot_index = 321
+    ax_shallow_boring = plt.subplot(plot_index)
+    ax_shallow_boring.text(0.5, 1.1, 'Non-Agile',
+                           horizontalalignment='center', verticalalignment='center',
+                           transform=ax_shallow_boring.transAxes, fontsize=25)
+    ax_shallow_boring.text(-0.15, 0.9, 'a',
+                           horizontalalignment='left', verticalalignment='center',
+                           transform=ax_shallow_boring.transAxes, fontsize=25, fontweight="bold")
+    Qmeans_shallow_boring = []
+    for sim, i in zip(boring_motile_representatives, range(len(boring_motile_representatives))):
+        # set axis limits and tick locations
+        # if f == 0.1:
+        #     ax_shallow_boring.set_ylim([-0.21, 0.11])
+        #     ax_shallow_boring.set_yticks([-0.2, -0.1, 0, 0.1])
+        if f == 0.01:
+            ax_shallow_boring.set_ylim([-0.81, 1.61])
+            ax_shallow_boring.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        # plot Q timeseries and mean value
+        plt.axhline(0, color='k')
+        Qline = ax_shallow_boring.plot(timestamps, sim["Q"][str(depth_slices[-1])],
+                                '-o', color=colour_boring[i], linewidth=2, markersize=3,
+                                label=r'B = {:1.1f}s, v = {:d}$\mu ms^{{-1}}$'.format(sim["B"],sim["V"]))
+        Qmeans_shallow_boring.append(np.mean(sim["Q"][str(depth_slices[-1])]))
+        # annotate each subplot with a letter (for labelling)
+        ax_shallow_boring.text(0.04, 0.04, "(" + plot_letter[plot_index % 10] + ")",
+                horizontalalignment='left', verticalalignment="bottom", transform=ax_shallow_boring.transAxes, fontsize=18)
+        # axis ticks fontsize handling
+        for tick in ax_shallow_boring.xaxis.get_major_ticks():
+                tick.label.set_fontsize(20)
+        for tick in ax_shallow_boring.yaxis.get_major_ticks():
+                tick.label.set_fontsize(20)
+        # restrict axis labels to left column and bottom row
+        if plot_index % 10 > 4:
+            ax_shallow_boring.set_xlabel("Time", fontsize=25)
+        if plot_index % 10 in [1, 3, 5]:
+            ax_shallow_boring.set_ylabel(r"$Q_{{\mathrm{{Shallow}}}}$", fontsize=25)
+    Q_meanline = plt.axhline(np.mean(Qmeans_shallow_boring), color='tab:gray', linestyle='--', linewidth=2)
+    ax_shallow_boring.text(1.02, (np.mean(Qmeans_shallow_boring) - ax_shallow_boring.get_ylim()[0]) / (
+                ax_shallow_boring.get_ylim()[1] - ax_shallow_boring.get_ylim()[0]), r"$\overline{{Q}} =${:1.2f}".format(np.mean(Qmeans_shallow_boring)),
+                           color='tab:gray', horizontalalignment='left', verticalalignment='center',
+                           transform=ax_shallow_boring.transAxes, fontsize=20)
+
+    plot_index = 322
+    ax_shallow_agile = plt.subplot(plot_index)
+    ax_shallow_agile.text(0.5, 1.1, 'Agile',
+                           horizontalalignment='center', verticalalignment='center',
+                           transform=ax_shallow_agile.transAxes, fontsize=25)
+    ax_shallow_agile.text(-0.15, 0.9, 'b',
+                           horizontalalignment='left', verticalalignment='center',
+                           transform=ax_shallow_agile.transAxes, fontsize=25, fontweight="bold")
+    Qmeans_shallow_agile = []
+    for sim, i in zip(agile_motile_representatives, range(len(agile_motile_representatives))):
+        # set axis limits and tick locations
+        # if f == 0.1:
+        #     ax_shallow_agile.set_ylim([-0.21, 0.11])
+        #     ax_shallow_agile.set_yticks([-0.2, -0.1, 0, 0.1])
+        if f == 0.01:
+            ax_shallow_agile.set_ylim([-0.81, 1.61])
+            ax_shallow_agile.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        # plot Q timeseries and mean value
+        plt.axhline(0, color='k')
+        Qline = ax_shallow_agile.plot(timestamps, sim["Q"][str(depth_slices[-1])],
+                                       '-o', color=colour_agile[i], linewidth=2, markersize=3,
+                                      label=r'B = {:1.1f}s, v = {:d}$\mu ms^{{-1}}$'.format(sim["B"], sim["V"]))
+        Qmeans_shallow_agile.append(np.mean(sim["Q"][str(depth_slices[-1])]))
+        # annotate each subplot with a letter (for labelling)
+        ax_shallow_agile.text(0.04, 0.04, "(" + plot_letter[plot_index % 10] + ")",
+                               horizontalalignment='left', verticalalignment="bottom",
+                               transform=ax_shallow_agile.transAxes, fontsize=18)
+        # axis ticks fontsize handling
+        for tick in ax_shallow_agile.xaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+        for tick in ax_shallow_agile.yaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+        # restrict axis labels to left column and bottom row
+        if plot_index % 10 > 4:
+            ax_shallow_agile.set_xlabel("Time", fontsize=25)
+        if plot_index % 10 in [1, 3, 5]:
+            ax_shallow_agile.set_ylabel(r"$Q_{{\mathrm{{Shallow}}}}$", fontsize=25)
+    Q_meanline = plt.axhline(np.mean(Qmeans_shallow_agile), color='tab:gray', linestyle='--', linewidth=2)
+    ax_shallow_agile.text(1.02, (np.mean(Qmeans_shallow_agile) - ax_shallow_agile.get_ylim()[0]) / (
+            ax_shallow_agile.get_ylim()[1] - ax_shallow_agile.get_ylim()[0]),
+                           r"$\overline{{Q}} =${:1.2f}".format(np.mean(Qmeans_shallow_agile)),
+                           color='tab:gray', horizontalalignment='left', verticalalignment='center',
+                           transform=ax_shallow_agile.transAxes, fontsize=20)
+
+
+    # mid depth slice ======================================================================================================
+    plot_letter = '_abcdefghi'  # for labelling subplots
+    plot_index = 323
+    ax_mid_boring = plt.subplot(plot_index)
+    ax_mid_boring.text(-0.15, 0.9, 'c',
+                           horizontalalignment='left', verticalalignment='center',
+                           transform=ax_mid_boring.transAxes, fontsize=25, fontweight="bold")
+    Qmeans_mid_boring = []
+    for sim, i in zip(boring_motile_representatives, range(len(boring_motile_representatives))):
+        # set axis limits and tick locations
+        # if f == 0.1:
+        #     ax_mid_boring.set_ylim([-0.21, 0.11])
+        #     ax_mid_boring.set_yticks([-0.2, -0.1, 0, 0.1])
+        if f == 0.01:
+            ax_mid_boring.set_ylim([-0.81, 1.61])
+            ax_mid_boring.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        # plot Q timeseries and mean value
+        plt.axhline(0, color='k')
+        Qline = ax_mid_boring.plot(timestamps, sim["Q"][str(depth_slices[1])],
+                                '-o', color=colour_boring[i], linewidth=2, markersize=3)
+        Qmeans_mid_boring.append(np.mean(sim["Q"][str(depth_slices[1])]))
+        # annotate each subplot with a letter (for labelling)
+        ax_mid_boring.text(0.04, 0.04, "(" + plot_letter[plot_index % 10] + ")",
+                        horizontalalignment='left', verticalalignment="bottom", transform=ax_mid_boring.transAxes,
+                        fontsize=18)
+        # axis ticks fontsize handling
+        for tick in ax_mid_boring.xaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+        for tick in ax_mid_boring.yaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+        # restrict axis labels to left column and bottom row
+        if plot_index % 10 > 4:
+            ax_mid_boring.set_xlabel("Time", fontsize=25)
+        if plot_index % 10 in [1, 3, 5]:
+            ax_mid_boring.set_ylabel(r"$Q_{{\mathrm{{Mid}}}}$", fontsize=25)
+    Q_meanline = plt.axhline(np.mean(Qmeans_mid_boring), color='tab:gray', linestyle='--', linewidth=2)
+    ax_mid_boring.text(1.02, (np.mean(Qmeans_mid_boring) - ax_mid_boring.get_ylim()[0]) / (
+            ax_mid_boring.get_ylim()[1] - ax_mid_boring.get_ylim()[0]),
+                           r"$\overline{{Q}} =${:1.2f}".format(np.mean(Qmeans_mid_boring)),
+                           color='tab:gray', horizontalalignment='left', verticalalignment='center',
+                           transform=ax_mid_boring.transAxes, fontsize=20)
+
+    plot_index = 324
+    ax_mid_agile = plt.subplot(plot_index)
+    ax_mid_agile.text(-0.15, 0.9, 'd',
+                           horizontalalignment='left', verticalalignment='center',
+                           transform=ax_mid_agile.transAxes, fontsize=25, fontweight="bold")
+    Qmeans_mid_agile = []
+    for sim, i in zip(agile_motile_representatives, range(len(agile_motile_representatives))):
+        # set axis limits and tick locations
+        # if f == 0.1:
+        #     ax_mid_agile.set_ylim([-0.21, 0.11])
+        #     ax_mid_agile.set_yticks([-0.2, -0.1, 0, 0.1])
+        if f == 0.01:
+            ax_mid_agile.set_ylim([-0.81, 1.61])
+            ax_mid_agile.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        # plot Q timeseries and mean value
+        plt.axhline(0, color='k')
+        Qline = ax_mid_agile.plot(timestamps, sim["Q"][str(depth_slices[1])],
+                                   '-o', color=colour_agile[i], linewidth=2, markersize=3)
+        Qmeans_mid_agile.append(np.mean(sim["Q"][str(depth_slices[1])]))
+        # annotate each subplot with a letter (for labelling)
+        ax_mid_agile.text(0.04, 0.04, "(" + plot_letter[plot_index % 10] + ")",
+                           horizontalalignment='left', verticalalignment="bottom", transform=ax_mid_agile.transAxes,
+                           fontsize=18)
+        # axis ticks fontsize handling
+        for tick in ax_mid_agile.xaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+        for tick in ax_mid_agile.yaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+        # restrict axis labels to left column and bottom row
+        if plot_index % 10 > 4:
+            ax_mid_agile.set_xlabel("Time", fontsize=25)
+        if plot_index % 10 in [1, 3, 5]:
+            ax_mid_agile.set_ylabel(r"$Q_{{\mathrm{{Mid}}}}$", fontsize=25)
+    Q_meanline = plt.axhline(np.mean(Qmeans_mid_agile), color='tab:gray', linestyle='--', linewidth=2)
+    ax_mid_agile.text(1.02, (np.mean(Qmeans_mid_agile) - ax_mid_agile.get_ylim()[0]) / (
+            ax_mid_agile.get_ylim()[1] - ax_mid_agile.get_ylim()[0]),
+                       r"$\overline{{Q}} =${:1.2f}".format(np.mean(Qmeans_mid_agile)),
+                       color='tab:gray', horizontalalignment='left', verticalalignment='center',
+                       transform=ax_mid_agile.transAxes, fontsize=20)
+
+    # Deep depth slice ======================================================================================================
+    plot_letter = '_abcdefghi'  # for labelling subplots
+    plot_index = 325
+    ax_deep_boring = plt.subplot(plot_index)
+    ax_deep_boring.text(-0.15, 0.9, 'e',
+                           horizontalalignment='left', verticalalignment='center',
+                           transform=ax_deep_boring.transAxes, fontsize=25, fontweight="bold")
+    Qmeans_deep_boring = []
+    for sim, i in zip(boring_motile_representatives, range(len(boring_motile_representatives))):
+        # set axis limits and tick locations
+        # if f == 0.1:
+        #     ax_deep_boring.set_ylim([-0.41, 0.41])
+        #     ax_deep_boring.set_yticks([-0.4, -0.2, 0, 0.2, 0.4])
+        if f == 0.01:
+            ax_deep_boring.set_ylim([-0.81, 1.61])
+            ax_deep_boring.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        # plot Q timeseries and mean value
+        plt.axhline(0, color='k')
+        Qline = ax_deep_boring.plot(timestamps, sim["Q"][str(depth_slices[0])],
+                            '-o', color=colour_boring[i], linewidth=2, markersize=3)
+        Qmeans_deep_boring.append(np.mean(sim["Q"][str(depth_slices[0])]))
+        # annotate each subplot with a letter (for labelling)
+        ax_deep_boring.text(0.04, 0.04, "(" + plot_letter[plot_index % 10] + ")",
+                    horizontalalignment='left', verticalalignment="bottom", transform=ax_deep_boring.transAxes,
+                    fontsize=18)
+        # axis ticks fontsize handling
+        for tick in ax_deep_boring.xaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+        for tick in ax_deep_boring.yaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+        # restrict axis labels to left column and bottom row
+        if plot_index % 10 > 4:
+            ax_deep_boring.set_xlabel("Time", fontsize=25)
+        if plot_index % 10 in [1, 3, 5]:
+            ax_deep_boring.set_ylabel(r"$Q_{{\mathrm{{Deep}}}}$", fontsize=25, rotation=90)
+    Q_meanline = plt.axhline(np.mean(Qmeans_deep_boring), color='tab:gray', linestyle='--', linewidth=2)
+    ax_deep_boring.text(1.02, (np.mean(Qmeans_deep_boring) - ax_deep_boring.get_ylim()[0]) / (
+            ax_deep_boring.get_ylim()[1] - ax_deep_boring.get_ylim()[0]),
+                           r"$\overline{{Q}} =${:1.2f}".format(np.mean(Qmeans_deep_boring)),
+                           color='tab:gray', horizontalalignment='left', verticalalignment='center',
+                           transform=ax_deep_boring.transAxes, fontsize=20)
+
+    plot_index = 326
+    ax_deep_agile = plt.subplot(plot_index)
+    ax_deep_agile.text(-0.15, 0.9, 'f',
+                           horizontalalignment='left', verticalalignment='center',
+                           transform=ax_deep_agile.transAxes, fontsize=25, fontweight="bold")
+    Qmeans_deep_agile = []
+    for sim, i in zip(agile_motile_representatives, range(len(agile_motile_representatives))):
+        # set axis limits and tick locations
+        # if f == 0.1:
+        #     ax_deep_agile.set_ylim([-0.41, 0.41])
+        #     ax_deep_agile.set_yticks([-0.4, -0.2, 0, 0.2, 0.4])
+        if f == 0.01:
+            ax_deep_agile.set_ylim([-0.81, 1.61])
+            ax_deep_agile.set_yticks([-0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6])
+        # plot Q timeseries and mean value
+        plt.axhline(0, color='k')
+        Qline = ax_deep_agile.plot(timestamps, sim["Q"][str(depth_slices[0])],
+                                    '-o', color=colour_agile[i], linewidth=2, markersize=3)
+        Qmeans_deep_agile.append(np.mean(sim["Q"][str(depth_slices[0])]))
+        # annotate each subplot with a letter (for labelling)
+        ax_deep_agile.text(0.04, 0.04, "(" + plot_letter[plot_index % 10] + ")",
+                            horizontalalignment='left', verticalalignment="bottom", transform=ax_deep_agile.transAxes,
+                            fontsize=18)
+        # axis ticks fontsize handling
+        for tick in ax_deep_agile.xaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+        for tick in ax_deep_agile.yaxis.get_major_ticks():
+            tick.label.set_fontsize(20)
+        # restrict axis labels to left column and bottom row
+        if plot_index % 10 > 4:
+            ax_deep_agile.set_xlabel("Time", fontsize=25)
+        if plot_index % 10 in [1, 3, 5]:
+            ax_deep_agile.set_ylabel(r"$Q_{{\mathrm{{Deep}}}}$", fontsize=25)
+    Q_meanline = plt.axhline(np.mean(Qmeans_deep_agile), color='tab:gray', linestyle='--', linewidth=2)
+    ax_deep_agile.text(1.02, (np.mean(Qmeans_deep_agile) - ax_deep_agile.get_ylim()[0]) / (
+            ax_deep_agile.get_ylim()[1] - ax_deep_agile.get_ylim()[0]),
+                        r"$\overline{{Q}} =${:1.2f}".format(np.mean(Qmeans_deep_agile)),
+                        color='tab:gray', horizontalalignment='left', verticalalignment='center',
+                        transform=ax_deep_agile.transAxes, fontsize=20)
+
+    # handles_boring, labels_boring = ax_deep_boring.get_legend_handles_labels()
+    ax_shallow_boring.legend(loc="upper center", fontsize=20)
+    ax_shallow_agile.legend(loc="upper center", fontsize=20)
+
+
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.9)
+
+    # plt.show()
+    fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/Q/Qovertime_vs_Depth/3x2agileVboringSims/100000p_%0.2ff_Q_overtime_%s%s.png" % (f, avg_func.__name__, surfstring))
+    plt.clf()
+
+
+if plot_violins:
+    nonAgileSims = boring_motile_concentrations
+    agileSims = agile_motile_concentrations
+    nonAgileViolinData = [np.concatenate([np.concatenate([sim['Q'][str(depth_slices[2])] for sim in nonAgileSims]), np.concatenate([sim['Q'][str(depth_slices[1])] for sim in nonAgileSims])]),
+                          np.concatenate([sim['Q'][str(depth_slices[0])] for sim in nonAgileSims])]  # deep nonagile
+    agileViolinData = [np.concatenate([np.concatenate([sim['Q'][str(depth_slices[2])] for sim in agileSims]), np.concatenate([sim['Q'][str(depth_slices[1])] for sim in agileSims])]),
+                       np.concatenate([sim['Q'][str(depth_slices[0])] for sim in agileSims])]  # deep agile
+    # xlabels = ["Shallow+Mid\nSlow", "Shallow+Mid\nAgile", "Deep\nSlow", "Deep\nAgile"]
+    ylabels = ["Deep\nAgile", "Deep\nNon-Agile", "Shallow+Mid\nAgile", "Shallow+Mid\nNon-Agile"]
+
+    plt.clf()
+    fig = plt.figure(figsize=(20, 15))
+    ax = plt.gca()
+    nonAgileViolins = ax.violinplot(nonAgileViolinData, positions=[2.4, 1.2], vert=False, showextrema=False, showmeans=False) #4,2
+    agileViolins = ax.violinplot(agileViolinData, positions=[1.8, 0.6], vert=False, showextrema=False, showmeans=False) #3,1
+    for b in nonAgileViolins['bodies']:
+        b.set_facecolor('#d6604d')
+        b.set_alpha(1)
+    for b in agileViolins['bodies']:
+        b.set_facecolor('#4393c3')
+        b.set_alpha(1)
+    # means = [np.mean(x) for x in [nonAgileViolinData[0], agileViolinData[0], nonAgileViolinData[1], agileViolinData[1]]]
+    means = [np.mean(x) for x in [agileViolinData[1], nonAgileViolinData[1], agileViolinData[0], nonAgileViolinData[0]]]
+    ax.axvline(0, ymin=0, ymax=1, color='k', lw=1)
+    ax.vlines(means, ymin=[0.3, 0.9, 1.5, 2.1], ymax=[0.9, 1.5, 2.1, 2.7], colors='white', lw=2)
+    ax.text(means[0]+0.01, 0.6, r'$\overline{{Q}}={:1.2f}$'.format(means[0]), color='white', fontsize=22,
+            horizontalalignment="left", verticalalignment="top")
+    ax.text(means[1]+0.01, 1.2, r'$\overline{{Q}}={:1.2f}$'.format(means[1]), color='white', fontsize=22,
+            horizontalalignment="left", verticalalignment="top")
+    ax.text(means[2]-0.01, 1.8, r'$\overline{{Q}}={:1.2f}$'.format(means[2]), color='white', fontsize=22,
+            horizontalalignment="right", verticalalignment="center")
+    ax.text(means[3]-0.01, 2.4, r'$\overline{{Q}}={:1.2f}$'.format(means[3]), color='white', fontsize=22,
+            horizontalalignment="right", verticalalignment="center")
+    ax.set_yticks([0.6, 1.2, 1.8, 2.4])
+    ax.set_yticklabels(ylabels)
+    ax.tick_params(axis='y', which='both', length=0)
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(26)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(26)
+    # ax.set_ylabel("Sample Type", fontsize=26)
+    ax.set_xlabel("Q", fontsize=26)
+    legend_patches = [mpatches.Patch(color='#d6604d'), mpatches.Patch(color='#4393c3')]
+    legend_labels = ["Non-Agile", "Agile"]
+    ax.legend(legend_patches, legend_labels, fontsize=24, loc="center right")
+    ax.spines['top'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_color('black')
+
+    # plt.show()
+    fig.savefig(
+            "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/Q/violins/100000p_%0.2ff_violin_%s%s.png" % (
+            f, avg_func.__name__, surfstring))

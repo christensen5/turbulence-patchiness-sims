@@ -172,10 +172,7 @@ if plot_3x1_superimposed:
             tick.label.set_fontsize(20)
     ax_v500.legend(loc="upper left", fontsize=15)
 
-    if nosurf:
-        st = fig.suptitle("Q statistic over time (excluding surface particles) (f=%0.2f)" % f, fontsize=25)
-    else:
-        st = fig.suptitle("Q statistic over time (including surface particles) (f=%0.2f)" % f, fontsize=25)
+    st = fig.suptitle("Q statistic over time (f=%0.2f)" % f, fontsize=25)
     # plt.show()
     fig.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/Q/Qovertime/3x1_superimposed/100000p_%0.2ff_Q_overtime_%s%s.png" % (f, avg_func.__name__, surfstring))
 
@@ -183,10 +180,7 @@ if plot_3x1_superimposed:
 if plot_3x3:
     fig = plt.figure(figsize=(20, 16))
 
-    if nosurf:
-        st = fig.suptitle("Q statistic over time (excluding surface layer) (f=%0.2f)" % f, fontsize=32)
-    else:
-        st = fig.suptitle("Q statistic over time (including surface layer) (f=%0.2f)" % f, fontsize=32)
+    # st = fig.suptitle("Q statistic over time (f=%0.2f)" % f, fontsize=32)
 
     colour = [0, 0.5, 0]
 
@@ -209,8 +203,8 @@ if plot_3x3:
         Qmean = np.mean(sim["Q"])
         Q_meanline = plt.axhline(Qmean, color=colour, linestyle='--', linewidth=2)
         # annotate each subplot with a letter (for labelling) and the Q mean value
-        ax.text(0.04, 0.04, "("+plot_letter[plot_index % 10]+")",
-                horizontalalignment='left', verticalalignment="bottom", transform=ax.transAxes, fontsize=18)
+        ax.text(-0.2, 0.96, plot_letter[plot_index % 10],
+                horizontalalignment='left', verticalalignment="top", transform=ax.transAxes, fontsize=20, fontweight="bold")
         ax.text(1.02, (Qmean - ax.get_ylim()[0])/(ax.get_ylim()[1] - ax.get_ylim()[0]), "{:1.2f}".format(Qmean), color=colour,
                 horizontalalignment='left', verticalalignment='center', transform=ax.transAxes, fontsize=20)
         # axis ticks fontsize handling

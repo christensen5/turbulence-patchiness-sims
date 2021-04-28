@@ -77,6 +77,7 @@ epsilon_array[:, 0] -= time_offset  # align timestamps with the Parcels simulati
 epsilon_array[:, 3] = -epsilon_array[:, 3]  # make epsilon column positive
 epsilon_timestamps = np.unique(epsilon_array[:, 0])  # extract timestamps at which we have epsilon data
 
+tempsWithDeps = np.load("/media/alexander/AKC Passport 2TB/0-30/twd.npy")
 
 # # Joint plot with distributions on axes
 # sns.set(font_scale=.8, rc={'figure.figsize':(15,15)})
@@ -134,11 +135,24 @@ from matplotlib.ticker import ScalarFormatter
 xfmt = ScalarFormatter()
 xfmt.set_powerlimits((0, 0))
 xfmt.set_scientific(True)
-points = hv.Points(np.array([epsilon_array[:, 3], epsilon_array[:, 1]]).transpose())
-text = hv.Text(0.000365, 0.27, text='Shallow', halign='right', valign='center') * \
+points_eps = hv.Points(np.array([epsilon_array[:, 3], epsilon_array[:, 1]]).transpose())
+tempsWithDeps = tempsWithDeps[np.random.choice(tempsWithDeps.shape[0], 100000000), :]
+twd_plot = hv.Bivariate(tempsWithDeps)
+hv.save(twd_plot, "/home/alexander/Desktop/temp/twd.png")
+
+# generate scatter plots with holoviews
+points_temps = hv.Points(tempsWithDeps)
+print("points_temps generated.")
+text_eps = hv.Text(0.000365, 0.27, text='Shallow', halign='right', valign='center') * \
         hv.Text(0.000365, 0.205, text='Mid', halign='right', valign='center') * \
         hv.Text(0.000365, 0.135, text='Deep', halign='right', valign='center')
+text_temps = hv.Text(-0.2, 0.27, text='Shallow', halign='left', valign='center') * \
+        hv.Text(-0.2, 0.205, text='Mid', halign='left', valign='center') * \
+        hv.Text(-0.2, 0.135, text='Deep', halign='left', valign='center')
 hlines = hv.HLine(0.1) * hv.HLine(0.17) * hv.HLine(0.24) * hv.HLine(0.3)
+
+
+
 # points.opts(alpha=0.1, s=50,
 #             xlabel=r"$\epsilon$ [$m^2 s^{-3}$]",
 #             ylabel=r"Depth [m]",
@@ -151,7 +165,7 @@ hlines = hv.HLine(0.1) * hv.HLine(0.17) * hv.HLine(0.24) * hv.HLine(0.3)
 # hlines.opts(color=['k']*4,
 #             linewidth=1.,
 #             linestyle=':')
-(points * text * hlines).opts(
+(points_eps * text_eps * hlines).opts(
     opts.Points(alpha=0.1, s=50,
             xlabel=r"$\epsilon$ [$m^2 s^{-3}$]",
             ylabel=r"Depth [m]",
@@ -165,4 +179,20 @@ hlines = hv.HLine(0.1) * hv.HLine(0.17) * hv.HLine(0.24) * hv.HLine(0.3)
             linewidth=1.,
             linestyle=':')
 )
-hv.save(points * text * hlines, "/home/alexander/Documents/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/DepthvsEps/DepthvsEps.png", fmt='svg')
+print("points_eps options set.")
+
+(points_temps * text_temps * hlines).opts(
+        opts.Points(alpha=0.1, s=2,
+            xlabel=r"Temperature (relative to reference temp $\theta_{z_0}$) [$^{\circ}C$]",
+            ylabel=r"Depth [m]",
+            # fontscale=2.5,
+            aspect=1,
+            fig_inches=11,
+            edgecolors='none'),
+        opts.HLine(color='k',
+                   linewidth=1.,
+                   linestyle=':')
+)
+print("points_temps options set.")
+hv.save((points_eps * text_eps * hlines) + (points_temps * text_temps * hlines), "/home/alexander/Documents/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/DepthvsEpsandTemps.png", fmt='svg')
+print("hv plot saved.")

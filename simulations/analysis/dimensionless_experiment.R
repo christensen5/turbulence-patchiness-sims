@@ -3,9 +3,11 @@ library(readr)
 require(dplyr)
 require(gridExtra)
 library(latex2exp)
+library(plotrix)
 
 library(grid)
 library(RColorBrewer)
+library(ggsci)
 
 make_gradient <- function(data, cols = blues9) {
   n = length(data)
@@ -39,8 +41,42 @@ assign_region = function(vect){
   return(newvect)
 }
 
+region_colours = function(vect){
+  colourvect = as.character(vect)
+  for (i in 1:length(vect)){
+    if (vect[i] == "shallow"){
+      colourvect[i] = "#f8766d"
+    } else if (vect[i] == "mid"){
+      colourvect[i] = "#00ba38"
+    } else if (vect[i] == "deep"){
+      colourvect[i] = "#5d9df7"
+    } else {
+      colourvect[i] = "none"
+    }
+  }
+  return(colourvect)
+}
 
 setwd("/media/alexander/AKC Passport 2TB")
+
+eps_min_ocean = 1e-8
+eps_max_ocean = 1e-4
+nu_min_ocean = 8.01e-07
+nu_max_ocean = 1.31e-06
+
+PHI_min_ocean_v10 = 1e-5/(eps_max_ocean * nu_max_ocean)^0.25
+PHI_max_ocean_v10 = 1e-5/(eps_min_ocean * nu_min_ocean)^0.25
+PHI_min_ocean_v100 = 1e-4/(eps_max_ocean * nu_max_ocean)^0.25
+PHI_max_ocean_v100 = 1e-4/(eps_min_ocean * nu_min_ocean)^0.25
+PHI_min_ocean_v500 = 5e-4/(eps_max_ocean * nu_max_ocean)^0.25
+PHI_max_ocean_v500 = 5e-4/(eps_min_ocean * nu_min_ocean)^0.25
+
+PSI_min_ocean_B1 = 1 * ((eps_min_ocean / nu_max_ocean)^0.5)
+PSI_max_ocean_B1 = 1 * ((eps_max_ocean / nu_min_ocean)^0.5)
+PSI_min_ocean_B3 = 3 * ((eps_min_ocean / nu_max_ocean)^0.5)
+PSI_max_ocean_B3 = 3 * ((eps_max_ocean / nu_min_ocean)^0.5)
+PSI_min_ocean_B5 = 5 * ((eps_min_ocean / nu_max_ocean)^0.5)
+PSI_max_ocean_B5 = 5 * ((eps_max_ocean / nu_min_ocean)^0.5)
 
 nu = 5e-6
 
@@ -57,14 +93,17 @@ epsilon$omega_K = (epsilon$epsilon / nu)^0.5
 
 eps_av = epsilon %>% group_by(zb) %>% summarise(mean(epsilon))
 eps_sd = epsilon %>% group_by(zb) %>% summarise(sd(epsilon))
+# eps_sd = epsilon %>% group_by(zb) %>% summarise(std.error(epsilon))
 epsilon_stat = dplyr::full_join(eps_av, eps_sd, by = "zb") %>% rename(av="mean(epsilon)", sd="sd(epsilon)")
 
 V_K_av = epsilon %>% group_by(zb) %>% summarise(mean(V_K))
 V_K_sd = epsilon %>% group_by(zb) %>% summarise(sd(V_K))
+# V_K_sd = epsilon %>% group_by(zb) %>% summarise(std.error(V_K))
 V_K_stat = dplyr::full_join(V_K_av, V_K_sd, by = "zb") %>% rename(av="mean(V_K)", sd="sd(V_K)")
 
 omega_K_av = epsilon %>% group_by(zb) %>% summarise(mean(omega_K))
 omega_K_sd = epsilon %>% group_by(zb) %>% summarise(sd(omega_K))
+# omega_K_sd = epsilon %>% group_by(zb) %>% summarise(std.error(omega_K))
 omega_K_stat = dplyr::full_join(omega_K_av, omega_K_sd, by = "zb") %>% rename(av="mean(omega_K)", sd="sd(omega_K)")
 
 phi = data.frame(z = epsilon_stat$zb,
@@ -80,44 +119,140 @@ psi = data.frame(z = epsilon_stat$zb,
 # all B columns in phipsi are the psi-values at that B value. Likewise v columns are phi-values at that vswim value.
 phipsi = data.frame(zb = epsilon_stat$zb,
                     region = assign_region(epsilon_stat$zb))
+phipsi$region_colours = region_colours(phipsi$region)
 
 phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(v10_av=mean(1e-5 / V_K)), by="zb")
 phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(v10_sd=sd(1e-5 / V_K)), by="zb")
+# phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(v10_sd=std.error(1e-5 / V_K)), by="zb")
 phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(v100_av=mean(1e-4 / V_K)), by="zb")
 phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(v100_sd=sd(1e-4 / V_K)), by="zb")
+# phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(v100_sd=std.error(1e-4 / V_K)), by="zb")
 phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(v500_av=mean(5e-4 / V_K)), by="zb")
 phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(v500_sd=sd(5e-4 / V_K)), by="zb")
+# phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(v500_sd=std.error(5e-4 / V_K)), by="zb")
 
 phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(B1_av=mean(1 * omega_K)), by="zb")
 phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(B1_sd=sd(1 * omega_K)), by="zb")
+# phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(B1_sd=std.error(1 * omega_K)), by="zb")
 phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(B3_av=mean(3 * omega_K)), by="zb")
 phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(B3_sd=sd(3 * omega_K)), by="zb")
+# phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(B3_sd=std.error(3 * omega_K)), by="zb")
 phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(B5_av=mean(5 * omega_K)), by="zb")
 phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(B5_sd=sd(5 * omega_K)), by="zb")
+# phipsi = left_join(phipsi, epsilon %>% group_by(zb) %>% summarise(B5_sd=std.error(5 * omega_K)), by="zb")
+
 
 B1_v500 = ggplot(phipsi) +
-  geom_ribbon(aes(x = B1_av, ymin=v500_av-v500_sd, ymax=v500_av+v500_sd, fill=region, color=region), alpha=1., linetype=1) +
-  geom_ribbon(aes(y = v500_av, xmin=B1_av-B1_sd, xmax=B1_av+B1_sd, fill=region), alpha=1., colour=NA, linetype=1) +
-  #geom_rect(mapping=aes(xmin=B1_av-B1_sd, xmax = B1_av+B1_sd, ymin = v500_av-v500_sd, ymax = v500_av+v500_sd, fill=region), color=NA, alpha=0.5) + 
-  geom_line(aes(x=B1_av, y=v500_av), colour="black", size=0.2) +
-  #geom_vline(xintercept=0.1, colour="black", linetype=2, alpha=0.7, size=1) +
+  #geom_ribbon(aes(x = B1_av, ymin=v500_av-v500_sd, ymax=v500_av+v500_sd, fill=region, color=region), alpha=1., linetype=1) +
+  #geom_ribbon(aes(y = v500_av, xmin=B1_av-B1_sd, xmax=B1_av+B1_sd, fill=region, color=region), alpha=1., linetype=1) +
+  #geom_rect(mapping=aes(xmin=B1_av[1]-B1_sd[1], xmax = B1_av[1], ymin = v500_av[1], ymax = v500_av[1]+v500_sd[1], fill=region, color=region), alpha=1.) + 
+  geom_line(aes(x=B1_av, y=v500_av, color=region), size=1.5) +
+  annotate("text", x=max(phipsi$B1_av+phipsi$B1_sd), y = min(phipsi$v500_av), label="(B1, v500)", hjust=0) +
   labs(y=expression(Phi) , x=expression(Psi), tag = "a") +
-  #coord_flip() +
-  #scale_x_continuous(trans='log10', limits=c(-1, 10)) + 
-  #scale_y_continuous(trans='log10', limits=c(-1, 10)) +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21)) 
+B1_v100 = B1_v500 +
+  # geom_ribbon(aes(x = B1_av, ymin=v100_av-v100_sd, ymax=v100_av+v100_sd, fill=region, color=region), alpha=1., linetype=1) +
+  # geom_ribbon(aes(y = v100_av, xmin=B1_av-B1_sd, xmax=B1_av+B1_sd, fill=region), alpha=1., colour=NA, linetype=1) +
+  geom_line(aes(x=B1_av, y=v100_av, color=region), size=1.5) +
+  annotate("text", x=max(phipsi$B1_av+phipsi$B1_sd), y = min(phipsi$v100_av), label="(B1, v100)", hjust=0) +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21))
+B1_v10 = B1_v100 +
+  # geom_ribbon(aes(x = B1_av, ymin=v10_av-v10_sd, ymax=v10_av+v10_sd, fill=region, color=region), alpha=1., linetype=1) +
+  # geom_ribbon(aes(y = v10_av, xmin=B1_av-B1_sd, xmax=B1_av+B1_sd, fill=region), alpha=1., colour=NA, linetype=1) +
+  geom_line(aes(x=B1_av, y=v10_av, color=region), size=1.5) +
+  annotate("text", x=max(phipsi$B1_av+phipsi$B1_sd), y = min(phipsi$v10_av), label="(B1, v10)", hjust=0) +
   theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21)) 
 
-B5_v10 = B1_v500 +
-  geom_ribbon(aes(x = B5_av, ymin=v10_av-v10_sd, ymax=v10_av+v10_sd, fill=region, color=region), alpha=1., linetype=1) +
-  geom_ribbon(aes(y = v10_av, xmin=B5_av-B5_sd, xmax=B5_av+B5_sd, fill=region), alpha=1., colour=NA, linetype=1) +
-  #geom_rect(mapping=aes(xmin=B1_av-B1_sd, xmax = B1_av+B1_sd, ymin = v500_av-v500_sd, ymax = v500_av+v500_sd, fill=region), color=NA, alpha=0.5) + 
-  geom_line(aes(x=B5_av, y=v10_av), colour="black", size=0.2) +
-  #geom_vline(xintercept=0.1, colour="black", linetype=2, alpha=0.7, size=1) +
-  labs(y=expression(Phi) , x=expression(Psi), tag = "a") +
-  #coord_flip() +
-  scale_x_log10() + 
-  scale_y_log10() +
+B3_v500 = B1_v10 +
+  # geom_ribbon(aes(x = B3_av, ymin=v500_av-v500_sd, ymax=v500_av+v500_sd, fill=region, color=region), alpha=1., linetype=1) +
+  # geom_ribbon(aes(y = v500_av, xmin=B3_av-B3_sd, xmax=B3_av+B3_sd, fill=region, color=region), alpha=1., linetype=1) +
+  geom_line(aes(x=B3_av, y=v500_av, color=region), size=1.5) +
+  annotate("text", x=max(phipsi$B3_av+phipsi$B3_sd), y = min(phipsi$v500_av), label="(B3, v500)", hjust=0) +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21)) 
+B3_v100 = B3_v500 +
+  # geom_ribbon(aes(x = B3_av, ymin=v100_av-v100_sd, ymax=v100_av+v100_sd, fill=region, color=region), alpha=1., linetype=1) +
+  # geom_ribbon(aes(y = v100_av, xmin=B3_av-B3_sd, xmax=B3_av+B3_sd, fill=region), alpha=1., colour=NA, linetype=1) +
+  geom_line(aes(x=B3_av, y=v100_av, color=region), size=1.5) +
+  annotate("text", x=max(phipsi$B3_av+phipsi$B3_sd), y = min(phipsi$v100_av), label="(B3, v100)", hjust=0) +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21))
+B3_v10 = B3_v100 +
+  # geom_ribbon(aes(x = B3_av, ymin=v10_av-v10_sd, ymax=v10_av+v10_sd, fill=region, color=region), alpha=1., linetype=1) +
+  # geom_ribbon(aes(y = v10_av, xmin=B3_av-B3_sd, xmax=B3_av+B3_sd, fill=region), alpha=1., colour=NA, linetype=1) +
+  geom_line(aes(x=B3_av, y=v10_av, color=region), size=1.5) +
+  annotate("text", x=max(phipsi$B3_av+phipsi$B3_sd), y = min(phipsi$v10_av), label="(B3, v10)", hjust=0) +
   theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21)) 
 
+B5_v500 = B3_v10 +
+  # geom_ribbon(aes(x = B5_av, ymin=v500_av-v500_sd, ymax=v500_av+v500_sd, fill=region, color=region), alpha=1., linetype=1) +
+  # geom_ribbon(aes(y = v500_av, xmin=B5_av-B5_sd, xmax=B5_av+B5_sd, fill=region, color=region), alpha=1., linetype=1) +
+  geom_line(aes(x=B5_av, y=v500_av, color=region), size=1.5) +
+  annotate("text", x=max(phipsi$B5_av+phipsi$B5_sd), y = min(phipsi$v500_av), label="(B5, v500)", hjust=0) +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21)) 
+B5_v100 = B5_v500 +
+  # geom_ribbon(aes(x = B5_av, ymin=v100_av-v100_sd, ymax=v100_av+v100_sd, fill=region, color=region), alpha=1., linetype=1) +
+  # geom_ribbon(aes(y = v100_av, xmin=B5_av-B5_sd, xmax=B5_av+B5_sd, fill=region), alpha=1., colour=NA, linetype=1) +
+  geom_line(aes(x=B5_av, y=v100_av, color=region), size=1.5) +
+  annotate("text", x=max(phipsi$B5_av+phipsi$B5_sd), y = min(phipsi$v100_av), label="(B5, v100)", hjust=0) +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21))
+B5_v10 = B5_v100 +
+  # geom_ribbon(aes(x = B5_av, ymin=v10_av-v10_sd, ymax=v10_av+v10_sd, fill=region, color=region), alpha=1., linetype=1) +
+  # geom_ribbon(aes(y = v10_av, xmin=B5_av-B5_sd, xmax=B5_av+B5_sd, fill=region), alpha=1., colour=NA, linetype=1) +
+  geom_line(aes(x=B5_av, y=v10_av, color=region), size=1.5) +
+  annotate("text", x=max(phipsi$B5_av+phipsi$B5_sd), y = min(phipsi$v10_av), label="(B5, v10)", hjust=0) +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21))
 
+BVplot = B5_v10 + geom_hline(aes(yintercept = PHI_max_ocean_v500), color="grey60", size=0.8, linetype="dashed")
+print(BVplot + scale_x_log10(limits=c(0.1, 50)) + scale_y_log10(limits=c(0.001, 2)))
+
+w = 15
+B1 = ggplot(phipsi) +
+  geom_segment(x=log10(PSI_min_ocean_B1), y=1, xend =log10(PSI_max_ocean_B1), yend=, size=w, color="grey80", alpha=0.1) +
+  geom_line(aes(x=B1_av, y=as.factor(1), color=region), size=10) +
+  #annotate("text", x=max(phipsi$B1_av+phipsi$B1_sd), y = 1, label="(B1, v500)", hjust=0) +
+  labs(y=expression(paste(B, " (", s, ")")), x=expression(Psi), tag = "a") +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21)) 
+B3 = B1 +
+  geom_segment(x=log10(PSI_min_ocean_B3), y=2, xend =log10(PSI_max_ocean_B3), yend=2, size=w, color="grey80", alpha=0.1) +
+  geom_line(aes(x=B3_av, y=as.factor(2), color=region), size=10) +
+  #annotate("text", x=max(phipsi$B3_av+phipsi$B3_sd), y = 2, label="(B3, v10)", hjust=0) +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21)) 
+B5 = B3 +
+  geom_segment(x=log10(PSI_min_ocean_B5), y=3, xend =log10(PSI_max_ocean_B5), yend=3, size=w, color="grey80", alpha=0.1) +
+  geom_line(aes(x=B5_av, y=as.factor(3), color=region), size=10) +
+  #annotate("text", x=max(phipsi$B5_av+phipsi$B5_sd), y = 3, label="(B5, v10)", hjust=0) +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21), legend.key=element_blank(), legend.title=element_blank())
+Bplot = B5 +
+  # geom_vline(aes(xintercept = 1.0), color="grey60", size=1, linetype="dashed") +
+  geom_segment(x=0, y=0.4, xend=0, yend=3.5, color="#00924e", size=1, linetype="dashed") +
+  guides(colour = guide_legend(override.aes = list(alpha = 0.3, fill=NA))) +
+  geom_segment(x = -0.05, y = 3.5, xend = -1, yend = 3.5, lineend = "butt", linejoin = "mitre", size = 1, arrow = arrow(length = unit(0.2, "inches")), colour = "#00924e") +
+  geom_segment(x = 0.05, y = 3.5, xend = 1.5, yend = 3.5, lineend = "butt", linejoin = "mitre", size = 1, arrow = arrow(length = unit(0.2, "inches")), colour = "#00924e") +
+  annotate("text", x=0.12, y=3.6, label="less patchy", hjust="left", size=6, color="#00924e") +
+  annotate("text", x=26, y=3.6, label="less patchy", hjust="right", size=6, color="#00924e") +
+  annotate("text", x=1, y=c(3.75, 3.6), label=c("max", "patchiness"), size=6, color="#00924e") +
+  coord_cartesian( clip = "off")
+print(Bplot + scale_x_log10(limits=c(0.1, 50)) + scale_y_discrete(labels=c("1"="1", "2"="3", "3"="5")) + scale_color_manual(values=alpha(c("#009ad8", "#e79035", "#be313f"), 0.7)))
+
+
+V10 = ggplot(phipsi) +
+  geom_segment(x=0, y=log10(PHI_min_ocean_v10), xend=0, yend=log10(PHI_max_ocean_v10), size=w, color="grey80", alpha=0.1) +
+  geom_line(aes(x=0, y=v10_av, color=region), size=10) +
+  labs(x=expression(paste(V, " (", mu, m, s^{-1}, ")")), y=expression(Phi), tag = "b") +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21)) 
+V100 = V10 +
+  geom_segment(x=1, y=log10(PHI_min_ocean_v100), xend=1, yend=log10(PHI_max_ocean_v100), size=w, color="grey80", alpha=0.1) +
+  geom_line(aes(x=1, y=v100_av, color=region), size=10) +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21)) 
+V500 = V100 +
+  geom_segment(x=2, y=log10(PHI_min_ocean_v500), xend=2, yend=log10(PHI_max_ocean_v500), size=w, color="grey80", alpha=0.1) +
+  geom_line(aes(x=2, y=v500_av, color=region), size=10) +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21), legend.position="none")#legend.key=element_blank(), legend.title=element_blank())
+Vplot = V500 +
+  # geom_segment(x=0, y=log10(PHI_max_ocean_v500), xend=2.1, yend=log10(PHI_max_ocean_v500), color="red", size=1, linetype="dashed") +
+  # guides(colour = guide_legend(override.aes = list(alpha = 0.3, fill=NA))) +
+  geom_segment(x = 2.3, y = -2.8, xend = 2.3, yend = 0.35, lineend = "butt", linejoin = "mitre", size = 1, arrow = arrow(length = unit(0.2, "inches"), ends="both"), colour = "#00924e") +
+  annotate("text", x=2.3, y=2.5, label="more patchy", hjust="center", vjust="bottom", size=6, color="#00924e") +
+  annotate("text", x=2.3, y=0.0013, label="less patchy", hjust="center", size=6, color="#00924e") +
+  coord_cartesian( clip = "off")
+print(Vplot + scale_x_continuous(limits=c(0, 2.4), breaks=c(0, 1, 2), labels=c(10, 100, 500)) + scale_y_log10(limits=c(0.001, 2.5), breaks=c(0.001, 0.01, 0.1, 1), labels=c("0.001", "0.01", "0.1", "1"))  + scale_color_manual(values=alpha(c("#009ad8", "#e79035", "#be313f"), 0.7)))
 

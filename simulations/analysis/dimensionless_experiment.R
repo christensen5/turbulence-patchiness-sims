@@ -206,53 +206,65 @@ print(BVplot + scale_x_log10(limits=c(0.1, 50)) + scale_y_log10(limits=c(0.001, 
 
 w = 15
 B1 = ggplot(phipsi) +
-  geom_segment(x=log10(PSI_min_ocean_B1), y=1, xend =log10(PSI_max_ocean_B1), yend=, size=w, color="grey80", alpha=0.1) +
+  geom_segment(x=log10(PSI_min_ocean_B1), y=1, xend=log10(PSI_max_ocean_B1), yend=1, size=w, color="grey80", alpha=0.1) +
   geom_line(aes(x=B1_av, y=as.factor(1), color=region), size=10) +
+  annotate("text", x=0.07, y = 1, label="B=1s", hjust="right", vjust="center", size=10) +
   #annotate("text", x=max(phipsi$B1_av+phipsi$B1_sd), y = 1, label="(B1, v500)", hjust=0) +
-  labs(y=expression(paste(B, " (", s, ")")), x=expression(Psi), tag = "a") +
-  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21)) 
+  labs(x=expression(Psi))#, tag = "a") +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=30)) 
 B3 = B1 +
   geom_segment(x=log10(PSI_min_ocean_B3), y=2, xend =log10(PSI_max_ocean_B3), yend=2, size=w, color="grey80", alpha=0.1) +
   geom_line(aes(x=B3_av, y=as.factor(2), color=region), size=10) +
+  annotate("text", x=0.2, y = 2, label="B=3s", hjust="right", vjust="center", size=10) +
   #annotate("text", x=max(phipsi$B3_av+phipsi$B3_sd), y = 2, label="(B3, v10)", hjust=0) +
-  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21)) 
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=30))
 B5 = B3 +
   geom_segment(x=log10(PSI_min_ocean_B5), y=3, xend =log10(PSI_max_ocean_B5), yend=3, size=w, color="grey80", alpha=0.1) +
   geom_line(aes(x=B5_av, y=as.factor(3), color=region), size=10) +
-  #annotate("text", x=max(phipsi$B5_av+phipsi$B5_sd), y = 3, label="(B5, v10)", hjust=0) +
-  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21), legend.key=element_blank(), legend.title=element_blank())
+  annotate("text", x=0.35, y = 3, label="B=5s", hjust="right", vjust="center", size=10) +
+  theme(panel.background = element_blank(), axis.line.x = element_line(colour = "black"), text=element_text(size=30), legend.key=element_blank(), legend.title=element_blank(),
+        axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank(), axis.line.y=element_blank())
 Bplot = B5 +
   # geom_vline(aes(xintercept = 1.0), color="grey60", size=1, linetype="dashed") +
-  geom_segment(x=0, y=0.4, xend=0, yend=3.5, color="#00924e", size=1, linetype="dashed") +
+  geom_segment(x=0, y=0.4, xend=0, yend=3.75, color="#00924e", size=1, linetype="dashed") +
   guides(colour = guide_legend(override.aes = list(alpha = 0.3, fill=NA))) +
-  geom_segment(x = -0.05, y = 3.5, xend = -1, yend = 3.5, lineend = "butt", linejoin = "mitre", size = 1, arrow = arrow(length = unit(0.2, "inches")), colour = "#00924e") +
-  geom_segment(x = 0.05, y = 3.5, xend = 1.5, yend = 3.5, lineend = "butt", linejoin = "mitre", size = 1, arrow = arrow(length = unit(0.2, "inches")), colour = "#00924e") +
-  annotate("text", x=0.12, y=3.6, label="less patchy", hjust="left", size=6, color="#00924e") +
-  annotate("text", x=26, y=3.6, label="less patchy", hjust="right", size=6, color="#00924e") +
-  annotate("text", x=1, y=c(3.75, 3.6), label=c("max", "patchiness"), size=6, color="#00924e") +
-  coord_cartesian( clip = "off")
-print(Bplot + scale_x_log10(limits=c(0.1, 50)) + scale_y_discrete(labels=c("1"="1", "2"="3", "3"="5")) + scale_color_manual(values=alpha(c("#009ad8", "#e79035", "#be313f"), 0.7)))
+  geom_segment(x = -0.05, y = 3.75, xend = -1.5, yend = 3.75, lineend = "butt", linejoin = "mitre", size = 1, arrow = arrow(length = unit(0.2, "inches")), colour = "#00924e") +
+  geom_segment(x = 0.05, y = 3.75, xend = 1.8, yend = 3.75, lineend = "butt", linejoin = "mitre", size = 1, arrow = arrow(length = unit(0.2, "inches")), colour = "#00924e") +
+  annotate("text", x=0.04, y=c(3.9, 3.6), label=c("less", "patchy"), hjust="left", size=10, color="#00924e") +
+  annotate("text", x=50, y=c(3.9, 3.6), label=c("less", "patchy"), hjust="right", size=10, color="#00924e") +
+  #annotate("text", x=1, y=c(3.75, 3.6), label=c("max", "patchiness"), size=10, color="#00924e") +
+  coord_cartesian( clip = "off") + 
+  geom_blank(aes(x=1, y=4))
+# print(Bplot + scale_x_log10(limits=c(0.1, 50)) + scale_y_discrete(labels=c("1"="1", "2"="3", "3"="5")) + scale_color_manual(values=alpha(c("#009ad8", "#e79035", "#be313f"), 0.7)))
+print(Bplot + scale_x_log10(limits=c(0.04, 50)) + scale_color_manual(values=alpha(c("#009ad8", "#e79035", "#be313f"), 0.7)))
 
 
 V10 = ggplot(phipsi) +
-  geom_segment(x=0, y=log10(PHI_min_ocean_v10), xend=0, yend=log10(PHI_max_ocean_v10), size=w, color="grey80", alpha=0.1) +
-  geom_line(aes(x=0, y=v10_av, color=region), size=10) +
-  labs(x=expression(paste(V, " (", mu, m, s^{-1}, ")")), y=expression(Phi), tag = "b") +
-  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21)) 
+  geom_segment(x=0.5, y=log10(PHI_min_ocean_v10), xend=0.5, yend=log10(PHI_max_ocean_v10), size=w, color="grey80", alpha=0.1) +
+  geom_line(aes(x=0.5, y=v10_av, color=region), size=10) +
+  annotate("text", x=0.5, y = 0.001, label=expression(paste(v["swim"], "=", 10, mu, "m/s")), hjust="center", vjust="top", size=10) +
+  labs(y=expression(Phi))#, tag = "b") +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=30)) 
 V100 = V10 +
-  geom_segment(x=1, y=log10(PHI_min_ocean_v100), xend=1, yend=log10(PHI_max_ocean_v100), size=w, color="grey80", alpha=0.1) +
-  geom_line(aes(x=1, y=v100_av, color=region), size=10) +
-  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21)) 
+  geom_segment(x=1.5, y=log10(PHI_min_ocean_v100), xend=1.5, yend=log10(PHI_max_ocean_v100), size=w, color="grey80", alpha=0.1) +
+  geom_line(aes(x=1.5, y=v100_av, color=region), size=10) +
+  annotate("text", x=1.5, y = 0.01, label=expression(paste(v["swim"], "=", 100, mu, "m/s")), hjust="center", vjust="top", size=10) +
+  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=30)) 
 V500 = V100 +
-  geom_segment(x=2, y=log10(PHI_min_ocean_v500), xend=2, yend=log10(PHI_max_ocean_v500), size=w, color="grey80", alpha=0.1) +
-  geom_line(aes(x=2, y=v500_av, color=region), size=10) +
-  theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), text=element_text(size=21), legend.position="none")#legend.key=element_blank(), legend.title=element_blank())
+  geom_segment(x=2.5, y=log10(PHI_min_ocean_v500), xend=2.5, yend=log10(PHI_max_ocean_v500), size=w, color="grey80", alpha=0.1) +
+  geom_line(aes(x=2.5, y=v500_av, color=region), size=10) +
+  annotate("text", x=2.5, y = 0.055, label=expression(paste(v["swim"], "=", 500, mu, "m/s")), hjust="center", vjust="top", size=10) +
+  theme(panel.background = element_blank(), axis.line.y = element_line(colour = "black"), text=element_text(size=30), legend.position="none",
+        axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank(), axis.line.x=element_blank())
 Vplot = V500 +
   # geom_segment(x=0, y=log10(PHI_max_ocean_v500), xend=2.1, yend=log10(PHI_max_ocean_v500), color="red", size=1, linetype="dashed") +
   # guides(colour = guide_legend(override.aes = list(alpha = 0.3, fill=NA))) +
-  geom_segment(x = 2.3, y = -2.8, xend = 2.3, yend = 0.35, lineend = "butt", linejoin = "mitre", size = 1, arrow = arrow(length = unit(0.2, "inches"), ends="both"), colour = "#00924e") +
-  annotate("text", x=2.3, y=2.5, label="more patchy", hjust="center", vjust="bottom", size=6, color="#00924e") +
-  annotate("text", x=2.3, y=0.0013, label="less patchy", hjust="center", size=6, color="#00924e") +
-  coord_cartesian( clip = "off")
-print(Vplot + scale_x_continuous(limits=c(0, 2.4), breaks=c(0, 1, 2), labels=c(10, 100, 500)) + scale_y_log10(limits=c(0.001, 2.5), breaks=c(0.001, 0.01, 0.1, 1), labels=c("0.001", "0.01", "0.1", "1"))  + scale_color_manual(values=alpha(c("#009ad8", "#e79035", "#be313f"), 0.7)))
+  geom_segment(x = 3.2, y = -3.3, xend = 3.2, yend = 0.35, lineend = "butt", linejoin = "mitre", size = 1, arrow = arrow(length = unit(0.2, "inches"), ends="both"), colour = "#00924e") +
+  annotate("text", x=3.2, y=2.7, label="more patchy", hjust="center", vjust="bottom", size=10, color="#00924e") +
+  annotate("text", x=3.2, y=0.0004, label="less patchy", hjust="center", size=10, color="#00924e") +
+  coord_cartesian( clip = "off") + 
+  geom_blank(aes(x=0, y=0.0004)) + 
+  geom_blank(aes(x=3.5, y=2.6))
+# print(Vplot + scale_x_continuous(limits=c(0, 2.4), breaks=c(0, 1, 2), labels=c(10, 100, 500)) + scale_y_log10(limits=c(0.001, 2.5), breaks=c(0.001, 0.01, 0.1, 1), labels=c("0.001", "0.01", "0.1", "1"))  + scale_color_manual(values=alpha(c("#009ad8", "#e79035", "#be313f"), 0.7)))
+print(Vplot + scale_y_log10(limits=c(0.0004, 2.7), breaks=c(0.001, 0.01, 0.1, 1), labels=c("0.001", "0.01", "0.1", "1"))  + scale_color_manual(values=alpha(c("#009ad8", "#e79035", "#be313f"), 0.7)))
 

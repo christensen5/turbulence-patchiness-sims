@@ -810,7 +810,7 @@ def suite():
     # Test utils and subroutines.
     # suite.addTest(OfflineTPSTestCase('test_kernel_top_bottom_boundary'))
     # suite.addTest(OfflineTPSTestCase('test_kernel_Gyr_EE_3D_advection'))
-    suite.addTest(OfflineTPSTestCase('test_kernel_Gyr_EE_3D_reorientation'))
+    # suite.addTest(OfflineTPSTestCase('test_kernel_Gyr_EE_3D_reorientation'))
     # suite.addTest((OfflineTPSTestCase('test_kernel_Gyr_EE_3D_tumble_rot')))
     # suite.addTest((OfflineTPSTestCase('test_kernel_Gyr_EE_3D_tumble_irrot')))
 

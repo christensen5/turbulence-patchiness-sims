@@ -44,8 +44,8 @@ all_sims = [data_v10_B1, data_v100_B1, data_v500_B1,
             data_v10_B5, data_v100_B5, data_v500_B5]
 
 # choose plots
-plot_3x3_allSims = False
-plot_1x3_Bvar = True
+plot_3x3_allSims = True
+plot_1x3_Bvar = False
 
 # ======================================================================================================================
 if plot_3x3_allSims:
@@ -86,7 +86,7 @@ if plot_3x3_allSims:
             c = ax.pcolormesh(pol_bins, rad_bins, h, vmax=0.3, cmap='coolwarm')
             ax.axvline(pol_avg, color='k', lw=1.)
             ax.axvline(-pol_avg, color='k', lw=1.)
-            ax.annotate("{:.1f}".format(np.rad2deg(pol_avg)), xy=(pol_avg, ax.get_ylim()[1]), color='k')
+            ax.annotate("{:.1f}".format(np.rad2deg(pol_avg)), xy=(pol_avg, 0.95*ax.get_ylim()[1]), color='k')
             ax.set_xticklabels(['0', '45', '90', '135', '180', '-135', '', '-45'])
             ax.set_yticks([])
             if sim_id < 4:
@@ -94,7 +94,7 @@ if plot_3x3_allSims:
             if sim_id % 3 == 1:
                 ax.set_ylabel("B = {:1.1f}".format(sim["B"]), labelpad=25, fontsize=15)
             # if sim_id == 3:
-            fig.colorbar(c, ax=ax)
+            # fig.colorbar(c, ax=ax)
             ax.set_theta_zero_location("N")
             ax.set_rlabel_position(180)
 

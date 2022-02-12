@@ -759,11 +759,11 @@ def plot_trajectories(sample, orientations, colours, filepath, savepath=None):
     ax.set_title("Particle Trajectories", fontsize=24)
     ax.set_xlabel("Longitude [m]", fontsize=24, labelpad=40)
     ax.set_ylabel("Latitude [m]", fontsize=24, labelpad=30)
-    ax.set_zlabel("Depth [m]", fontsize=24, labelpad=20)
+    ax.set_zlabel("z [m]", fontsize=24, labelpad=20)
 
     m = 5
     for p in tqdm(range(len(sample))):
-        ax.scatter(x[p, 0], y[p, 0], z[p, 0], 'c', c='k', s=6.0)  # mark start points
+        ax.scatter(x[p, 0], y[p, 0], z[p, 0], 'c', c='k', s=10.0)  # mark start points
         ax.plot(x[p, :], y[p, :], z[p, :], 'o', c=colours[p], markersize=4)
         if orientations:
             ax.quiver(x[p, ::m], y[p, ::m], z[p, ::m],
@@ -817,7 +817,7 @@ def plot_depth_trajectories(samplesize, colours, filepath_slow, filepath_agile, 
 
     for ax in [ax_slow, ax_agile]:
         ax.set_xlabel("Time [s]", fontsize=24)#, labelpad=40)
-        ax.set_ylabel("Depth [m]", fontsize=24)  # , labelpad=30)
+        ax.set_ylabel("z [m]", fontsize=24)  # , labelpad=30)
         ax.set_xlim([0, 601])
         ax.set_ylim([0., 0.31])
         ax.set_xticks(np.arange(0, 600, 100))
@@ -1175,17 +1175,13 @@ if __name__ == "__main__":
     # timesteps = np.arange(0, 601, 10)
     # extract_particlewise_fluid_velocities(fluid_velocity_fields, path_to_lonlatdeps, timesteps)
 
-    # sample = np.random.randint(0, 100000, 3)
+    # sample = np.random.randint(0, 100000, 6)
     # colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:brown", "tab:pink", "tab:gray", "tab:olive", "tab:cyan"]
     # filepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_1.0B_10um_initunif_mot.nc"
-    # orientation = True
-    # savepath = os.path.join(os.path.dirname(filepath), "pos/pos.png")
-    # timestamp = 270
-    # savepath = "/home/alexander/Desktop/snapshot%d.png" % timestamp
-    # # plot_trajectories(sample, orientation, colors, filepath, savepath)
-    # for timestamp in [250, 260, 270, 280, 290, 300]:
-    #     savepath = "/home/alexander/Desktop/snapshot%d.png" % timestamp
-    #     plot_snapshot(timestamp, filepath, savepath)
+    # orientation = False
+    # savepath = os.path.join(os.path.dirname(filepath), "pos/sample_trajectories3.png")
+    # plot_trajectories(sample, orientation, colors, filepath, savepath)
+
 
     samplesize = 6
     colors = ["tab:blue", "tab:orange", "tab:green", "tab:purple", "tab:red", "tab:brown", "tab:pink", "tab:gray", "tab:olive", "tab:cyan"]

@@ -8,7 +8,7 @@ import netCDF4
 # np.random.seed(1234)
 
 # Open checkpoint file
-nc_chk = netCDF4.Dataset("/media/alexander/DATA/Ubuntu/Maarten/outputs/sim123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_1000um_initunif_mot/trajectories_100000p_0-30s_0.01dt_0.1sdt_1.0B_1000um_initunif_mot2.nc")
+nc_chk = netCDF4.Dataset("/media/alexander/DATA/Ubuntu/Maarten/outputs/sim123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_0B_500um_initunif_mot/trajectories_100000p_0-30s_0.01dt_0.1sdt_0B_500um_initunif_mot.nc")
 
 
 # Load preset simulation parameters
@@ -22,7 +22,7 @@ scale_fact = 1200
 os.chdir("/media/alexander/AKC Passport 2TB/30-60/")
 # os.chdir("/media/alexander/AKC Passport 2TB/30-60/")
 filenames = "F*n.nc_vort.123"
-savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_1000um_initunif_mot/trajectories_100000p_30-60s_0.01dt_0.1sdt_1.0B_1000um_initunif_mot2.nc"
+savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_0B_500um_initunif_mot/trajectories_100000p_30-60s_0.01dt_0.1sdt_0B_500um_initunif_mot.nc"
 runtime = timedelta(seconds=30)
 dt = timedelta(seconds=0.01)
 outputdt = timedelta(seconds=0.1)

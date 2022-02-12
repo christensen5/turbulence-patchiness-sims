@@ -222,7 +222,7 @@ def GyrotaxisRK4_3D_withTemp(particle, fieldset, time):
     particle.dir_z = dir_z4
 
     # Update temp at new position.
-    particle.temp = fieldset.Temp[time + particle.dt, particle.depth, particle.lat, particle.lon]
+    # particle.temp = fieldset.Temp[time + particle.dt, particle.depth, particle.lat, particle.lon]
 
 
 def Track_velocities(particle, fieldset, time):

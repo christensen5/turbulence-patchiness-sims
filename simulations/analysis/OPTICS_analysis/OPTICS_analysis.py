@@ -9,9 +9,7 @@ import os
 
 path_to_trajectories = "/home/alexander/Documents/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_1.0B_500um_initunif_mot"
 timesteps = list(np.arange(200, 401, 10))  # full is 20-40s
-timesteps = list(np.linspace(200, 400, 21, dtype=int))  # always 20 timesteps
-print("WARNING: 10 TIMESTAPS CURRENTLY SET, FOR 1TSPAN_SMALLDT")
-timesteps = list(np.linspace(200, 210, 11, dtype=int))  # 10 timesteps (for 1s smalldt)
+timesteps = list(np.linspace(200, 400, 11, dtype=int))  # always 10 timesteps
 particles = list(np.arange(0, 100000))  #list(np.random.randint(0, 100000, 10000))
 
 save_clustering = True
@@ -35,7 +33,7 @@ deps = np.load(os.path.join(path_to_trajectories, "deps.npy"))[timesteps, :][:, 
 stackedTrajectories = np.hstack((lons.transpose(), lats.transpose(), deps.transpose()))
 
 # define OPTICS parameters
-min_samples = 500
+min_samples = 50
 
 # define clustering method parameters
 # xi =

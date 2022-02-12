@@ -137,9 +137,19 @@ xfmt = ScalarFormatter()
 xfmt.set_powerlimits((0, 0))
 xfmt.set_scientific(True)
 points_eps = hv.Points(np.array([epsilon_array[:, 3], epsilon_array[:, 1]]).transpose())
+<<<<<<< HEAD
 # tempsWithDeps = tempsWithDeps[np.random.choice(tempsWithDeps.shape[0], 10000), :]
 # generate scatter plots with holoviews
 points_temps = hv.Points(tempsWithDeps)
+=======
+tempsWithDeps = tempsWithDeps[np.random.choice(tempsWithDeps.shape[0], 100000000), :]
+twd_plot = hv.Bivariate(tempsWithDeps)
+hv.save(twd_plot, "/home/alexander/Desktop/temp/twd.png")
+
+# generate scatter plots with holoviews
+points_temps = hv.Points(tempsWithDeps)
+print("points_temps generated.")
+>>>>>>> cfb092486ebc5b7de6bdaf3f7b1c76474437dc97
 text_eps = hv.Text(0.000365, 0.27, text='Shallow', halign='right', valign='center') * \
         hv.Text(0.000365, 0.205, text='Mid', halign='right', valign='center') * \
         hv.Text(0.000365, 0.135, text='Deep', halign='right', valign='center')
@@ -177,6 +187,9 @@ hlines = hv.HLine(0.1) * hv.HLine(0.17) * hv.HLine(0.24) * hv.HLine(0.3)
             linestyle=':')
 )
 
+print("points_eps options set.")
+
+
 (points_temps * text_temps * hlines).opts(
         opts.Points(alpha=0.1, s=2,
             xlabel=r"Temperature (relative to reference temp $\theta_{z_0}$) [$^{\circ}C$]",
@@ -189,4 +202,7 @@ hlines = hv.HLine(0.1) * hv.HLine(0.17) * hv.HLine(0.24) * hv.HLine(0.3)
                    linewidth=1.,
                    linestyle=':')
 )
+
+print("points_temps options set.")
 hv.save((points_eps * text_eps * hlines) + (points_temps * text_temps * hlines), "/home/alexander/Documents/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/DepthvsEpsandTemps.png", fmt='svg')
+print("hv plot saved.")

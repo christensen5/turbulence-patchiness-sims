@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import stats
-from mayavi import mlab
+# from mayavi import mlab
 import multiprocessing
 from tqdm import tqdm
 import time

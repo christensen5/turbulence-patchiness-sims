@@ -6,7 +6,7 @@ from glob import glob
 import os
 import vg
 from scipy import stats
-from mayavi import mlab
+# from mayavi import mlab
 from math import ceil, floor
 from simulations.util.util import cart2spher
 # mlab.options.backend = 'envisage'
@@ -164,9 +164,9 @@ def extract_particlewise_fluid_velocities(fluid_velocity_fields, path_to_lonlatd
         lats_t = lats[ti, :]
         deps_t = deps[ti, :]
 
-        xsi_i = lons_t.astype('int')  # particle cell indicies
-        eta_i = lats_t.astype('int')
-        zeta_i = deps_t.astype('int')
+        xsi_i = np.clip(lons_t.astype('int'), 0, 724)  # particle cell indicies (clipped to sim edge)
+        eta_i = np.clip(lats_t.astype('int'), 0, 724)
+        zeta_i = np.clip(deps_t.astype('int'), 0, 364)
         xsi_d = np.mod(lons_t, 1) # particle coordinates within cells
         eta_d = np.mod(lats_t, 1)
         zeta_d = np.mod(deps_t, 1)
@@ -397,107 +397,107 @@ def histogram_cell_velocities(filepaths, n_bins, saveplot=None):
     return H, bin_edges
 
 
-def plot_densities(filepath, savepath=None):
-    """
-    This method uses the mayavi library to produce 3D density plots of a particle simulation.
-    :param filepath: string representing the path to netCDF file containing particle position data (EXCLUDING THE .nc)
-    :param savepath: string representing where to save the density plots.
-    """
-    timestamps = np.linspace(0, 300, 31, dtype=int).tolist()
-    lons = np.load(os.path.join(filepath, "lons.npy"))
-    lats = np.load(os.path.join(filepath, "lats.npy"))
-    deps = np.load(os.path.join(filepath, "deps.npy"))
-    density = np.load(os.path.join(filepath, "density.npy"))
-    density = density[:, :, 0:180, :]
-    min = density.min()
-    max = density.max()
-    xmin, ymin, zmin = (0., 0., 0.)
-    xmax, ymax, zmax = (720., 720., 360.)
-    xi, yi, zi = density.shape[0:3]
-    xi, yi, zi = np.mgrid[xmin:xmax:xi*1j, ymin:ymax:yi*1j, zmin:zmax:zi*1j]
+# def plot_densities(filepath, savepath=None):
+#     """
+#     This method uses the mayavi library to produce 3D density plots of a particle simulation.
+#     :param filepath: string representing the path to netCDF file containing particle position data (EXCLUDING THE .nc)
+#     :param savepath: string representing where to save the density plots.
+#     """
+#     timestamps = np.linspace(0, 300, 31, dtype=int).tolist()
+#     lons = np.load(os.path.join(filepath, "lons.npy"))
+#     lats = np.load(os.path.join(filepath, "lats.npy"))
+#     deps = np.load(os.path.join(filepath, "deps.npy"))
+#     density = np.load(os.path.join(filepath, "density.npy"))
+#     density = density[:, :, 0:180, :]
+#     min = density.min()
+#     max = density.max()
+#     xmin, ymin, zmin = (0., 0., 0.)
+#     xmax, ymax, zmax = (720., 720., 360.)
+#     xi, yi, zi = density.shape[0:3]
+#     xi, yi, zi = np.mgrid[xmin:xmax:xi*1j, ymin:ymax:yi*1j, zmin:zmax:zi*1j]
+#
+#     # for t in tqdm(range(density.shape[3])):
+#     #     figure = mlab.figure('DensityPlot', bgcolor=(1., 1., 1.), fgcolor=(0.,0.,0.), size=(720, 720))
+#     #     grid = mlab.pipeline.scalar_field(xi, yi, zi, density[:, :, :, t])
+#     #     #mlab.pipeline.volume(grid, vmin=min + .2 * (max - min), vmax=min + .8 * (max - min))
+#     #     # vol_lowconc = mlab.pipeline.volume(grid, vmin=0., vmax=min + .25 * (max - min), color=(1., 0., 0.))
+#     #     vol_highconc = mlab.pipeline.volume(grid, vmin=min + .75 * (max - min), vmax=max, color=(0., 0., 1.))
+#     #     mlab.axes()
+#     #     mlab.view(azimuth=45, elevation=235, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
+#     #      # mlab.view(azimuth=-45, elevation=315, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
+#     #      # mlab.show()
+#     #     if savepath is not None:
+#     #         mlab.savefig(savepath + "%03.0f" % t + "dead.png")
+#     #     mlab.clf()
+#
+#     for t in tqdm(range(density.shape[3])):
+#         x = lons[timestamps[t], ~np.isnan(lons[timestamps[t], :])]
+#         y = lats[timestamps[t], ~np.isnan(lats[timestamps[t], :])]
+#         z = deps[timestamps[t], ~np.isnan(deps[timestamps[t], :])]
+#
+#         xyz = np.vstack([x, y, z])
+#         kde = stats.gaussian_kde(xyz)
+#         density = kde(xyz)
+#         min=density.min()
+#         max=density.max()
+#         f = 0.5
+#         f_cutoff = min + 0.5*(max-min)
+#         colors = np.zeros((len(x), 4)).astype(np.uint8)
+#         for i in range(x.size):
+#             colors[i, 0] = 255 * (density[i] < f_cutoff)
+#             colors[i, 2] = 255 * (density[i] > f_cutoff)
+#             colors[i, 3] = int(255 * 0.2) * (density[i] > f_cutoff) + int(255 * 0.99) * (density[i] < f_cutoff)
+#
+#         # Plot scatter with mayavi
+#         figure = mlab.figure('DensityPlot', bgcolor=(1., 1., 1.), fgcolor=(0., 0., 0.), size=(720, 720))
+#         pts = mlab.points3d(x, y, z, density, colormap='blue-red', scale_mode='none', scale_factor=2)
+#         pts.module_manager.scalar_lut_manager.lut.table = colors
+#         mlab.axes()
+#         mlab.draw()
+#         mlab.savefig(savepath + "%03.0f" % t + ".png")
+#         mlab.clf()
 
-    # for t in tqdm(range(density.shape[3])):
-    #     figure = mlab.figure('DensityPlot', bgcolor=(1., 1., 1.), fgcolor=(0.,0.,0.), size=(720, 720))
-    #     grid = mlab.pipeline.scalar_field(xi, yi, zi, density[:, :, :, t])
-    #     #mlab.pipeline.volume(grid, vmin=min + .2 * (max - min), vmax=min + .8 * (max - min))
-    #     # vol_lowconc = mlab.pipeline.volume(grid, vmin=0., vmax=min + .25 * (max - min), color=(1., 0., 0.))
-    #     vol_highconc = mlab.pipeline.volume(grid, vmin=min + .75 * (max - min), vmax=max, color=(0., 0., 1.))
-    #     mlab.axes()
-    #     mlab.view(azimuth=45, elevation=235, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
-    #      # mlab.view(azimuth=-45, elevation=315, distance=2500, focalpoint=(xmax/2., ymax/2., zmax/2.))
-    #      # mlab.show()
-    #     if savepath is not None:
-    #         mlab.savefig(savepath + "%03.0f" % t + "dead.png")
-    #     mlab.clf()
 
-    for t in tqdm(range(density.shape[3])):
-        x = lons[timestamps[t], ~np.isnan(lons[timestamps[t], :])]
-        y = lats[timestamps[t], ~np.isnan(lats[timestamps[t], :])]
-        z = deps[timestamps[t], ~np.isnan(deps[timestamps[t], :])]
-
-        xyz = np.vstack([x, y, z])
-        kde = stats.gaussian_kde(xyz)
-        density = kde(xyz)
-        min=density.min()
-        max=density.max()
-        f = 0.5
-        f_cutoff = min + 0.5*(max-min)
-        colors = np.zeros((len(x), 4)).astype(np.uint8)
-        for i in range(x.size):
-            colors[i, 0] = 255 * (density[i] < f_cutoff)
-            colors[i, 2] = 255 * (density[i] > f_cutoff)
-            colors[i, 3] = int(255 * 0.2) * (density[i] > f_cutoff) + int(255 * 0.99) * (density[i] < f_cutoff)
-
-        # Plot scatter with mayavi
-        figure = mlab.figure('DensityPlot', bgcolor=(1., 1., 1.), fgcolor=(0., 0., 0.), size=(720, 720))
-        pts = mlab.points3d(x, y, z, density, colormap='blue-red', scale_mode='none', scale_factor=2)
-        pts.module_manager.scalar_lut_manager.lut.table = colors
-        mlab.axes()
-        mlab.draw()
-        mlab.savefig(savepath + "%03.0f" % t + ".png")
-        mlab.clf()
-
-
-def plot_voro_concs(filepath, savepath=None):
-    """
-    This method uses the mayavi library to produce 3D density plots of a particle simulation based on the reciprocal of
-    of the volume of the voronoi cells.
-    :param filepath: string representing the path to netCDF file containing particle position data (EXCLUDING THE .nc)
-    :param savepath: string representing where to save the density plots.
-    """
-    timestamps = np.linspace(0, 300, 31, dtype=int).tolist()
-    lons = np.load(os.path.join(filepath, "lons.npy"))[timestamps, :]
-    lats = np.load(os.path.join(filepath, "lats.npy"))[timestamps, :]
-    deps = np.load(os.path.join(filepath, "deps.npy"))[timestamps, :]
-    vols = np.load(os.path.join(filepath, "vols.npy"))
-    concs = np.reciprocal(vols)
-
-    for t in [26]:#tqdm(range(31)):
-        not_nans = ~np.isnan(lons[t, :])
-        x = lons[t, not_nans]
-        y = lats[t, not_nans]
-        z = deps[t, not_nans]
-        c = concs[not_nans, t]
-        x = x[z>1]
-        y = y[z>1]
-        c = c[z>1]
-        z = z[z>1]
-
-        # Plot scatter with mayavi
-        figure = mlab.figure('DensityPlot', bgcolor=(1., 1., 1.), fgcolor=(0., 0., 0.), size=(720, 720))
-        pts = mlab.points3d(x, y, z, np.log10(c), colormap='blue-red', scale_mode='scalar', scale_factor=1., transparent=True)
-        # pts.module_manager.scalar_lut_manager.lut.table = colors
-        # pts.mlab_source.dataset.point_data.scalars = c
-
-        # s = np.ones_like(x)
-        # pts = mlab.quiver3d(x, y, z, s, s, s, scalars=c, mode="sphere", scale_factor=.5)
-        # pts.glyph.color_mode = 'color_by_scalar'
-        # pts.glyph.glyph_source.glyph_source.center = [0, 0, 0]
-
-        mlab.axes()
-        mlab.draw()
-        mlab.savefig(savepath + "%03.0f" % t + ".png")
-        # mlab.clf()
+# def plot_voro_concs(filepath, savepath=None):
+#     """
+#     This method uses the mayavi library to produce 3D density plots of a particle simulation based on the reciprocal of
+#     of the volume of the voronoi cells.
+#     :param filepath: string representing the path to netCDF file containing particle position data (EXCLUDING THE .nc)
+#     :param savepath: string representing where to save the density plots.
+#     """
+#     timestamps = np.linspace(0, 300, 31, dtype=int).tolist()
+#     lons = np.load(os.path.join(filepath, "lons.npy"))[timestamps, :]
+#     lats = np.load(os.path.join(filepath, "lats.npy"))[timestamps, :]
+#     deps = np.load(os.path.join(filepath, "deps.npy"))[timestamps, :]
+#     vols = np.load(os.path.join(filepath, "vols.npy"))
+#     concs = np.reciprocal(vols)
+#
+#     for t in [26]:#tqdm(range(31)):
+#         not_nans = ~np.isnan(lons[t, :])
+#         x = lons[t, not_nans]
+#         y = lats[t, not_nans]
+#         z = deps[t, not_nans]
+#         c = concs[not_nans, t]
+#         x = x[z>1]
+#         y = y[z>1]
+#         c = c[z>1]
+#         z = z[z>1]
+#
+#         # Plot scatter with mayavi
+#         figure = mlab.figure('DensityPlot', bgcolor=(1., 1., 1.), fgcolor=(0., 0., 0.), size=(720, 720))
+#         pts = mlab.points3d(x, y, z, np.log10(c), colormap='blue-red', scale_mode='scalar', scale_factor=1., transparent=True)
+#         # pts.module_manager.scalar_lut_manager.lut.table = colors
+#         # pts.mlab_source.dataset.point_data.scalars = c
+#
+#         # s = np.ones_like(x)
+#         # pts = mlab.quiver3d(x, y, z, s, s, s, scalars=c, mode="sphere", scale_factor=.5)
+#         # pts.glyph.color_mode = 'color_by_scalar'
+#         # pts.glyph.glyph_source.glyph_source.center = [0, 0, 0]
+#
+#         mlab.axes()
+#         mlab.draw()
+#         mlab.savefig(savepath + "%03.0f" % t + ".png")
+#         # mlab.clf()
 
 
 # def plot_entropies(filepath):

@@ -11,7 +11,7 @@ filenames = "F*n.nc_vort.123"
 filenames = sorted(glob(str("/media/alexander/AKC Passport 2TB/0-30/F*n.nc_vort.123")))
 # filenames = sorted(glob(str("/mnt/D2BE6EF7BE6ED38F/sim123/F*n.nc_vort.123")) + glob(str("/media/alexander/WIN10DATA/sim123/F*n.nc_vort.123")), key=lambda filepath: filepath.split("/")[-1])
 
-savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/sim123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_0B_500um_initunif_mot/trajectories_100000p_0-30s_0.01dt_0.1sdt_0B_500um_initunif_mot.nc"
+savepath = "/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_0B_10um_initunif_mot/trajectories_100000p_0-30s_0.01dt_0.1sdt_0B_10um_initunif_mot.nc"
 # savepath = "/home/alexander/Documents/DATA/Ubuntu/Maarten/outputs/results123/initunif/mot/100000p_0-60s_0.01dt_0.1sdt_0B_10um_initunif_mot/trajectories_100000p_0-60s_0.01dt_0.1sdt_0B_10um_initunif_mot.nc"
 scale_fact = 1200 #5120./3
 num_particles = 100000
@@ -41,7 +41,7 @@ for v in variables:
     else:
         interp_method[v] = 'cgrid_tracer'
 
-fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps, time_periodic=time_periodic, interp_method=interp_method, chunksize=False)
+fieldset = FieldSet.from_netcdf(filenames, variables, dimensions, mesh=mesh, timestamps=timestamps, time_periodic=time_periodic, interp_method=interp_method, field_chunksize=False)
 
 # Implement field scaling.
 logger.warning_once("Scaling factor set to %f - ensure this is correct." % scale_fact)
@@ -77,7 +77,7 @@ pset = ParticleSet.from_field(fieldset=fieldset,
 
 # Initialise custom particle variables.
 if motile:
-    swim_init = scale_fact * 5e-4  # scale factor * swim speed in metres
+    swim_init = scale_fact * 1e-5  # scale factor * swim speed in metres
 for particle in pset:
     particle.diameter = scale_fact * np.random.uniform(0.000018, 0.000032)
     if motile:

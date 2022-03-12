@@ -91,8 +91,8 @@ boringest_motile_concentration = [data_v100_B3]
 plot_3x3allSims = False
 plot_3depthsx2agilestSims = False
 plot_3depthsx1boringSim = False
-plot_3depthsx2boringVagileSims = False
-plot_violins = True
+plot_3depthsx2boringVagileSims = True
+plot_violins = False
 
 # ======================================================================================================================
 # Compute Q for each motile simulation.
@@ -388,7 +388,7 @@ if plot_3depthsx2agilestSims:
                     transform=ax_shallow.transAxes, fontsize=25, rotation=270)
         # restrict axis labels to left column and bottom row
         if plot_index % 10 > 4:
-            ax_shallow.set_xlabel("Time", fontsize=25)
+            ax_shallow.set_xlabel("Time [s]", fontsize=25)
         if plot_index % 10 in [1, 3, 5]:
             ax_shallow.set_ylabel("Q", fontsize=25)
 
@@ -620,7 +620,7 @@ if plot_3depthsx1boringSim:
                          horizontalalignment='center', verticalalignment='center',
                          transform=ax_deep.transAxes, fontsize=25, rotation=270)
         # restrict axis labels to left column and bottom row
-        ax_deep.set_xlabel("Time", fontsize=25)
+        ax_deep.set_xlabel("Time [s]", fontsize=25)
         ax_deep.set_ylabel("Q", fontsize=25)
 
     fig.tight_layout()
@@ -672,9 +672,6 @@ if plot_3depthsx2boringVagileSims:
                                 '-o', color=colour_boring[i], linewidth=2, markersize=3,
                                 label=r'B = {:1.1f}s, v = {:d}$\mu ms^{{-1}}$'.format(sim["B"],sim["V"]))
         Qmeans_shallow_boring.append(np.mean(sim["Q"][str(depth_slices[-1])]))
-        # annotate each subplot with a letter (for labelling)
-        ax_shallow_boring.text(0.04, 0.04, "(" + plot_letter[plot_index % 10] + ")",
-                horizontalalignment='left', verticalalignment="bottom", transform=ax_shallow_boring.transAxes, fontsize=18)
         # axis ticks fontsize handling
         for tick in ax_shallow_boring.xaxis.get_major_ticks():
                 tick.label.set_fontsize(20)
@@ -682,7 +679,7 @@ if plot_3depthsx2boringVagileSims:
                 tick.label.set_fontsize(20)
         # restrict axis labels to left column and bottom row
         if plot_index % 10 > 4:
-            ax_shallow_boring.set_xlabel("Time", fontsize=25)
+            ax_shallow_boring.set_xlabel("Time [s]", fontsize=25)
         if plot_index % 10 in [1, 3, 5]:
             ax_shallow_boring.set_ylabel(r"$Q_{{\mathrm{{Shallow}}}}$", fontsize=25)
     Q_meanline = plt.axhline(np.mean(Qmeans_shallow_boring), color='tab:gray', linestyle='--', linewidth=2)
@@ -714,10 +711,6 @@ if plot_3depthsx2boringVagileSims:
                                        '-o', color=colour_agile[i], linewidth=2, markersize=3,
                                       label=r'B = {:1.1f}s, v = {:d}$\mu ms^{{-1}}$'.format(sim["B"], sim["V"]))
         Qmeans_shallow_agile.append(np.mean(sim["Q"][str(depth_slices[-1])]))
-        # annotate each subplot with a letter (for labelling)
-        ax_shallow_agile.text(0.04, 0.04, "(" + plot_letter[plot_index % 10] + ")",
-                               horizontalalignment='left', verticalalignment="bottom",
-                               transform=ax_shallow_agile.transAxes, fontsize=18)
         # axis ticks fontsize handling
         for tick in ax_shallow_agile.xaxis.get_major_ticks():
             tick.label.set_fontsize(20)
@@ -725,7 +718,7 @@ if plot_3depthsx2boringVagileSims:
             tick.label.set_fontsize(20)
         # restrict axis labels to left column and bottom row
         if plot_index % 10 > 4:
-            ax_shallow_agile.set_xlabel("Time", fontsize=25)
+            ax_shallow_agile.set_xlabel("Time [s]", fontsize=25)
         if plot_index % 10 in [1, 3, 5]:
             ax_shallow_agile.set_ylabel(r"$Q_{{\mathrm{{Shallow}}}}$", fontsize=25)
     Q_meanline = plt.axhline(np.mean(Qmeans_shallow_agile), color='tab:gray', linestyle='--', linewidth=2)
@@ -757,10 +750,6 @@ if plot_3depthsx2boringVagileSims:
         Qline = ax_mid_boring.plot(timestamps, sim["Q"][str(depth_slices[1])],
                                 '-o', color=colour_boring[i], linewidth=2, markersize=3)
         Qmeans_mid_boring.append(np.mean(sim["Q"][str(depth_slices[1])]))
-        # annotate each subplot with a letter (for labelling)
-        ax_mid_boring.text(0.04, 0.04, "(" + plot_letter[plot_index % 10] + ")",
-                        horizontalalignment='left', verticalalignment="bottom", transform=ax_mid_boring.transAxes,
-                        fontsize=18)
         # axis ticks fontsize handling
         for tick in ax_mid_boring.xaxis.get_major_ticks():
             tick.label.set_fontsize(20)
@@ -768,7 +757,7 @@ if plot_3depthsx2boringVagileSims:
             tick.label.set_fontsize(20)
         # restrict axis labels to left column and bottom row
         if plot_index % 10 > 4:
-            ax_mid_boring.set_xlabel("Time", fontsize=25)
+            ax_mid_boring.set_xlabel("Time [s]", fontsize=25)
         if plot_index % 10 in [1, 3, 5]:
             ax_mid_boring.set_ylabel(r"$Q_{{\mathrm{{Mid}}}}$", fontsize=25)
     Q_meanline = plt.axhline(np.mean(Qmeans_mid_boring), color='tab:gray', linestyle='--', linewidth=2)
@@ -797,10 +786,6 @@ if plot_3depthsx2boringVagileSims:
         Qline = ax_mid_agile.plot(timestamps, sim["Q"][str(depth_slices[1])],
                                    '-o', color=colour_agile[i], linewidth=2, markersize=3)
         Qmeans_mid_agile.append(np.mean(sim["Q"][str(depth_slices[1])]))
-        # annotate each subplot with a letter (for labelling)
-        ax_mid_agile.text(0.04, 0.04, "(" + plot_letter[plot_index % 10] + ")",
-                           horizontalalignment='left', verticalalignment="bottom", transform=ax_mid_agile.transAxes,
-                           fontsize=18)
         # axis ticks fontsize handling
         for tick in ax_mid_agile.xaxis.get_major_ticks():
             tick.label.set_fontsize(20)
@@ -808,7 +793,7 @@ if plot_3depthsx2boringVagileSims:
             tick.label.set_fontsize(20)
         # restrict axis labels to left column and bottom row
         if plot_index % 10 > 4:
-            ax_mid_agile.set_xlabel("Time", fontsize=25)
+            ax_mid_agile.set_xlabel("Time [s]", fontsize=25)
         if plot_index % 10 in [1, 3, 5]:
             ax_mid_agile.set_ylabel(r"$Q_{{\mathrm{{Mid}}}}$", fontsize=25)
     Q_meanline = plt.axhline(np.mean(Qmeans_mid_agile), color='tab:gray', linestyle='--', linewidth=2)
@@ -839,10 +824,6 @@ if plot_3depthsx2boringVagileSims:
         Qline = ax_deep_boring.plot(timestamps, sim["Q"][str(depth_slices[0])],
                             '-o', color=colour_boring[i], linewidth=2, markersize=3)
         Qmeans_deep_boring.append(np.mean(sim["Q"][str(depth_slices[0])]))
-        # annotate each subplot with a letter (for labelling)
-        ax_deep_boring.text(0.04, 0.04, "(" + plot_letter[plot_index % 10] + ")",
-                    horizontalalignment='left', verticalalignment="bottom", transform=ax_deep_boring.transAxes,
-                    fontsize=18)
         # axis ticks fontsize handling
         for tick in ax_deep_boring.xaxis.get_major_ticks():
             tick.label.set_fontsize(20)
@@ -850,7 +831,7 @@ if plot_3depthsx2boringVagileSims:
             tick.label.set_fontsize(20)
         # restrict axis labels to left column and bottom row
         if plot_index % 10 > 4:
-            ax_deep_boring.set_xlabel("Time", fontsize=25)
+            ax_deep_boring.set_xlabel("Time [s]", fontsize=25)
         if plot_index % 10 in [1, 3, 5]:
             ax_deep_boring.set_ylabel(r"$Q_{{\mathrm{{Deep}}}}$", fontsize=25, rotation=90)
     Q_meanline = plt.axhline(np.mean(Qmeans_deep_boring), color='tab:gray', linestyle='--', linewidth=2)
@@ -879,10 +860,6 @@ if plot_3depthsx2boringVagileSims:
         Qline = ax_deep_agile.plot(timestamps, sim["Q"][str(depth_slices[0])],
                                     '-o', color=colour_agile[i], linewidth=2, markersize=3)
         Qmeans_deep_agile.append(np.mean(sim["Q"][str(depth_slices[0])]))
-        # annotate each subplot with a letter (for labelling)
-        ax_deep_agile.text(0.04, 0.04, "(" + plot_letter[plot_index % 10] + ")",
-                            horizontalalignment='left', verticalalignment="bottom", transform=ax_deep_agile.transAxes,
-                            fontsize=18)
         # axis ticks fontsize handling
         for tick in ax_deep_agile.xaxis.get_major_ticks():
             tick.label.set_fontsize(20)
@@ -890,7 +867,7 @@ if plot_3depthsx2boringVagileSims:
             tick.label.set_fontsize(20)
         # restrict axis labels to left column and bottom row
         if plot_index % 10 > 4:
-            ax_deep_agile.set_xlabel("Time", fontsize=25)
+            ax_deep_agile.set_xlabel("Time [s]", fontsize=25)
         if plot_index % 10 in [1, 3, 5]:
             ax_deep_agile.set_ylabel(r"$Q_{{\mathrm{{Deep}}}}$", fontsize=25)
     Q_meanline = plt.axhline(np.mean(Qmeans_deep_agile), color='tab:gray', linestyle='--', linewidth=2)

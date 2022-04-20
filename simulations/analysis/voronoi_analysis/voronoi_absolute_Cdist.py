@@ -109,15 +109,15 @@ ax.vlines(0, ylims[0], ylims[1], 'k')
 ax.vlines(avg_func(absC_dead), ylims[0], ylims[1], 'green', linestyles="--", lw=2)
 ax.annotate(" %3.2f" % avg_func(absC_dead), xy=[avg_func(absC_dead), 1e5], xycoords="data", ha="left", va="top", fontsize=15, color="green")
 # ax.set_xticks([0, 5, 10, 15])
-ax.set_xlabel('Absolute concentration'+r'[$mL^{{-1}}$]', fontsize=15)
-ax.set_ylabel("Count", fontsize=15)
+ax.set_xlabel('Absolute concentration'+r'[$mL^{{-1}}$]', fontsize=18)
+ax.set_ylabel("Count", fontsize=18)
 for tick in ax.xaxis.get_major_ticks():
-    tick.label.set_fontsize(13)
+    tick.label.set_fontsize(16)
 for tick in ax.yaxis.get_major_ticks():
-    tick.label.set_fontsize(13)
+    tick.label.set_fontsize(16)
 plt.box(False)
 legend_elements = [Line2D([0], [0], color='green', lw=2, ls="--", label='median')]
-fig_dists.legend(handles=legend_elements, loc='center right')
+fig_dists.legend(handles=legend_elements, loc='center right', fontsize=18)
 if nosurf:
     fig_dists.suptitle(
         r'Distribution of Voronoi-based absolute microbe concentration within patches (excl. surface particles) ($f=%3.2f$, non-motile microbes)' % (
@@ -159,15 +159,14 @@ for simdata_dict in tqdm(all_motile_concentrations):
     ax.annotate(" %3.2f" % avg_func(absC), xy=[avg_func(absC), 1e5], xycoords="data", ha="left", va="top",
                 fontsize=15, color="#1f77b4")
     # ax.set_xticks([0, 5, 10, 15])
-    ax.set_xlabel('Absolute concentration'+r'[$mL^{{-1}}$]', fontsize=15)
-    ax.set_ylabel("Count", fontsize=15)
+    ax.set_xlabel('Absolute concentration'+r'[$mL^{{-1}}$]', fontsize=18)
+    ax.set_ylabel("Count", fontsize=18)
     for tick in ax.xaxis.get_major_ticks():
-        tick.label.set_fontsize(13)
+        tick.label.set_fontsize(16)
     for tick in ax.yaxis.get_major_ticks():
-        tick.label.set_fontsize(13)
-    plt.box(False)
+        tick.label.set_fontsize(16)
     legend_elements = [Line2D([0], [0], color='#1f77b4', lw=2, ls="--", label='median')]
-    fig_dists.legend(handles=legend_elements, loc='center right')
+    fig_dists.legend(handles=legend_elements, loc='center right', fontsize=18)
     if nosurf:
         ax.set_title(
             r'Distribution of Voronoi-based absolute microbe concentration within patches (excl. surface particles) (f=%3.2f, B=%3.1fs, v=%d' % (

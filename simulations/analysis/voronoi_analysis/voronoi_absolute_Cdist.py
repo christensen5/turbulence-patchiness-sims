@@ -103,9 +103,7 @@ absC_dead = C_dead  * 5717.87 # convert to microbes per mililitre
 # subplot the Q-distribution at this timestep
 ax = plt.subplot(111)
 hgram = ax.hist(absC_dead, 100, range=xlims, log=True, color="green")
-# ax.set_ylim(ylims)
-ax.hlines(1, ax.get_xlim()[0], ax.get_xlim()[1], 'k')
-ax.vlines(0, ylims[0], ylims[1], 'k')
+ax.set_xlim([0, 2500])
 ax.vlines(avg_func(absC_dead), ylims[0], ylims[1], 'green', linestyles="--", lw=2)
 ax.annotate(" %3.2f" % avg_func(absC_dead), xy=[avg_func(absC_dead), 1e5], xycoords="data", ha="left", va="top", fontsize=15, color="green")
 # ax.set_xticks([0, 5, 10, 15])
@@ -115,9 +113,8 @@ for tick in ax.xaxis.get_major_ticks():
     tick.label.set_fontsize(16)
 for tick in ax.yaxis.get_major_ticks():
     tick.label.set_fontsize(16)
-plt.box(False)
 legend_elements = [Line2D([0], [0], color='green', lw=2, ls="--", label='median')]
-fig_dists.legend(handles=legend_elements, loc='center right', fontsize=18)
+fig_dists.legend(handles=legend_elements, loc=(0.75, 0.5), fontsize=18)
 if nosurf:
     fig_dists.suptitle(
         r'Distribution of Voronoi-based absolute microbe concentration within patches (excl. surface particles) ($f=%3.2f$, non-motile microbes)' % (
@@ -152,9 +149,7 @@ for simdata_dict in tqdm(all_motile_concentrations):
     ax = plt.subplot(111)
     hgram = ax.hist(absC, 100, range=xlims, log=True)
     hgram_dead = ax.hist(absC_dead, 100, range=xlims, log=True, alpha=0.5, color="green")
-    # ax.set_ylim(ylims)
-    ax.hlines(1, ax.get_xlim()[0], ax.get_xlim()[1], 'k')
-    ax.vlines(0, ylims[0], ylims[1], 'k')
+    ax.set_xlim([0, 2500])
     ax.vlines(avg_func(absC), ylims[0], ylims[1], '#1f77b4', linestyles="--", lw=2)
     ax.annotate(" %3.2f" % avg_func(absC), xy=[avg_func(absC), 1e5], xycoords="data", ha="left", va="top",
                 fontsize=15, color="#1f77b4")
@@ -166,7 +161,7 @@ for simdata_dict in tqdm(all_motile_concentrations):
     for tick in ax.yaxis.get_major_ticks():
         tick.label.set_fontsize(16)
     legend_elements = [Line2D([0], [0], color='#1f77b4', lw=2, ls="--", label='median')]
-    fig_dists.legend(handles=legend_elements, loc='center right', fontsize=18)
+    fig_dists.legend(handles=legend_elements, loc=(0.75, 0.5), fontsize=18)
     if nosurf:
         ax.set_title(
             r'Distribution of Voronoi-based absolute microbe concentration within patches (excl. surface particles) (f=%3.2f, B=%3.1fs, v=%d' % (

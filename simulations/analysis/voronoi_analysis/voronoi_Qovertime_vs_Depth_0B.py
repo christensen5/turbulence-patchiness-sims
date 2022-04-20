@@ -183,7 +183,7 @@ if plot_3depthsx2slowVfastSims:
         plt.axhline(0, color='k')
         Qline = ax_shallow_agile.plot(timestamps, sim["Q"][str(depth_slices[-1])],
                                        '-o', color=colour_agile[i], linewidth=2, markersize=3,
-                                      label=r'B = {:1.1f}s, v = {:d}$\mu ms^{{-1}}$'.format(sim["B"], sim["V"]))
+                                      label=r'No reorientation, v = {:d}$\mu ms^{{-1}}$'.format(sim["B"], sim["V"]))
         Qmeans_shallow_agile.append(np.mean(sim["Q"][str(depth_slices[-1])]))
         # axis ticks fontsize handling
         for tick in ax_shallow_agile.xaxis.get_major_ticks():

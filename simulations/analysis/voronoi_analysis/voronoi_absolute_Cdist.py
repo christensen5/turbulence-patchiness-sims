@@ -96,7 +96,10 @@ if nosurf:
     conc_dead = conc_dead[depths_dead < 300]
 # keep only particles contained in patches, defined by f.
 nparticles = conc_dead.size # voro++ may have truncated pset by a few particles so choose smallest array
-C_dead = conc_dead[conc_dead.argsort()[-int(f * nparticles):]]
+patch_inds = conc_dead.argsort()[-int(f * nparticles):]
+depths_dead_patches = depths_dead[patch_inds]
+C_dead = conc_dead[patch_inds]
+# keep only particles in patches within the Deep region.
 Cm = avg_func(conc_dead)
 # absolute concentration C/Cm
 absC_dead = C_dead  * 5717.87 # convert to microbes per mililitre

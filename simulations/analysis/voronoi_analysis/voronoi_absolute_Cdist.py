@@ -85,7 +85,7 @@ nosurf = True
 surfstring = "_nosurf" if nosurf is True else ""
 
 timesteps = np.arange(0, 401, 1)  # timestamps over which to count concentrations. vols_v.npy was computed for 401 timestamps (20-60s in 0.1s steps)
-xlims = [-.5, 2500]  #[0, 1.2]
+xlims = [-.5, 1500]  #[0, 1.2]
 ylims = (1e0, 1e5)
 
 # Non-motile first.
@@ -110,9 +110,8 @@ C_dead_all_times = np.concatenate(C_dead_all_times, axis=0)  # unpack list into 
 absC_dead = C_dead_all_times * 5717.87 # convert to microbes per mililitre
 # plot the absC-distribution for this simulation
 ax = plt.subplot(111)
-hgram = ax.hist(absC_dead, 100, log=True, color="green")
-# hgram = ax.hist(absC_dead, 100, range=xlims, log=True, color="green")
-# ax.set_xlim([0, 2500])
+hgram = ax.hist(absC_dead, 100, range=xlims, log=True, color="green")
+ax.set_xlim([0, 1500])
 ax.vlines(avg_func(absC_dead), ylims[0], ylims[1], 'green', linestyles="--", lw=2)
 ax.annotate(" %3.2f" % avg_func(absC_dead), xy=[avg_func(absC_dead), 1e5], xycoords="data", ha="left", va="top", fontsize=15, color="green")
 # ax.set_xticks([0, 5, 10, 15])
@@ -136,7 +135,7 @@ else:
     wrap=True)
 fig_dists.savefig("/media/alexander/DATA/Ubuntu/Maarten/outputs/results123/initunif/comparison/vor/Q/absolute_concentration/absCdist_vor_%3.2ff_dead_semilog_timesnaps_%s%s.png" % (f, avg_func.__name__, surfstring))
 
-# Q distribution plots
+# Now all motile sims
 for simdata_dict in tqdm(all_motile_concentrations):
     fig_dists = plt.figure(figsize=(15, 9))
     C_mot_all_times = []
@@ -159,9 +158,8 @@ for simdata_dict in tqdm(all_motile_concentrations):
     # plot the absC-distribution for this simulation
     ax = plt.subplot(111)
     hgram = ax.hist(absC, 100, range=xlims, log=True)
-    hgram_dead = ax.hist(absC_dead, 100, log=True, alpha=0.5, color="green")
-    # hgram_dead = ax.hist(absC_dead, 100, range=xlims, log=True, alpha=0.5, color="green")
-    # ax.set_xlim([0, 2500])
+    hgram_dead = ax.hist(absC_dead, 100, range=xlims, log=True, alpha=0.5, color="green")
+    ax.set_xlim([0, 1500])
     ax.vlines(avg_func(absC), ylims[0], ylims[1], '#1f77b4', linestyles="--", lw=2)
     ax.annotate(" %3.2f" % avg_func(absC), xy=[avg_func(absC), 1e5], xycoords="data", ha="left", va="top",
                 fontsize=15, color="#1f77b4")

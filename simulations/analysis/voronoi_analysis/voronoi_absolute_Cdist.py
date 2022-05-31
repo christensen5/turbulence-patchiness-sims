@@ -4,6 +4,7 @@ is computed using the volumes of the Voronoi tessellation of the particle positi
 """
 
 import numpy as np
+import scipy.stats
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from tqdm import tqdm
@@ -155,6 +156,8 @@ for simdata_dict in tqdm(all_motile_concentrations):
     C_mot_all_times = np.concatenate(C_mot_all_times, axis=0)  # unpack list into np array
     # absolute concentration C
     absC = C_mot_all_times * 5717.87 # convert to microbes per mililitre
+    # Mann-Whitney U test that non-motile dist is stochastically less than the motile dist
+    MWU, p = scipy.stats.mannwhitneyu(absC_dead, absC, alternative="less")
     # plot the absC-distribution for this simulation
     ax = plt.subplot(111)
     hgram = ax.hist(absC, 100, range=xlims, log=True)
@@ -163,6 +166,8 @@ for simdata_dict in tqdm(all_motile_concentrations):
     ax.vlines(avg_func(absC), ylims[0], ylims[1], '#1f77b4', linestyles="--", lw=2)
     ax.annotate(" %3.2f" % avg_func(absC), xy=[avg_func(absC), 1e5], xycoords="data", ha="left", va="top",
                 fontsize=15, color="#1f77b4")
+    ax.annotate("U = %3.2f, p = %.2e" % (MWU, p), xy=[1000, 1e5], xycoords="data", ha="left", va="top",
+                fontsize=15)
     ax.set_xlabel('Absolute concentration'+r'[$mL^{{-1}}$]', fontsize=18)
     ax.set_ylabel("Count", fontsize=18)
     for tick in ax.xaxis.get_major_ticks():
